@@ -35,7 +35,7 @@ root.innerHTML = `
   <section class="shop-panel" id="order-panel" hidden><h3 id="order-title">Your order</h3><p id="order-detail"></p><div id="order-options"></div><button id="place-order">Submit order</button><p id="order-note" aria-live="polite"></p></section>
   <section class="shop-panel"><h2>YOUR ORDERS</h2><div id="order-history">Loading…</div></section>
   <section class="shop-panel"><h2>PRIVATE MESSAGE</h2><textarea id="member-message" rows="3" maxlength="1000" placeholder="Send the owner a private message"></textarea><button id="send-message">Send message</button><p id="message-note" aria-live="polite"></p><div id="message-history"></div></section>
-  ${profile.is_owner ? '<section class="shop-panel"><h2>OWNER CONTROLS</h2><button id="toggle-shop">Toggle shop open / closed</button><div id="owner-orders"></div></section>' : ""}
+  ${profile.is_owner ? '<section class="shop-panel"><h2>OWNER CONTROLS</h2><button id="toggle-shop">Toggle shop open / closed</button><div class="shop-panel"><h3>EXTERIOR ARTWORK</h3><p class="muted">Choose the approved storefront picture from your phone Gallery. JPG, PNG, or WebP · up to 15 MB.</p><input id="exterior-upload" type="file" accept="image/jpeg,image/png,image/webp"><p id="exterior-upload-status" aria-live="polite"></p></div><div id="owner-orders"></div></section>' : ""}
 `;
 
 const catalog = root.querySelector("#catalog");
@@ -109,6 +109,38 @@ async function loadMessages() {
 }
 root.querySelector("#sign-out").addEventListener("click", async () => { await supabase.auth.signOut(); location.reload(); });
 if (profile.is_owner) {
+  const artworkInput = root.querySelector("#exterior-upload");
+  const artworkStatus = root.querySelector("#exterior-upload-status");
+  artworkInput?.addEventListener("change", async () => {
+    const file = artworkInput.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg","image/png","image/webp"].includes(file.type) || file.size > 15 * 1024 * 1024) {
+      artworkStatus.textContent = "Choose a JPG, PNG, or WebP image under 15 MB.";
+      artworkInput.value = "";
+      return;
+    }
+    artworkInput.disabled = true;
+    artworkStatus.textContent = "Uploading exterior artwork…";
+    try {
+      const { error } = await supabase.storage.from("nightshop-artwork").upload("exterior/current", file, {
+        upsert: true, contentType: file.type, cacheControl: "0"
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from("nightshop-artwork").getPublicUrl("exterior/current");
+      const image = document.querySelector("#exterior-artwork");
+      image.onload = () => {
+        document.querySelector("#street-scene")?.classList.add("artwork-mode");
+        artworkStatus.textContent = "Exterior artwork is live.";
+      };
+      image.onerror = () => { artworkStatus.textContent = "Uploaded, but the preview could not load. Refresh and try again."; };
+      image.src = data.publicUrl + "?v=" + Date.now();
+    } catch (error) {
+      console.error("Exterior artwork upload failed:", error);
+      artworkStatus.textContent = "Upload failed: " + (error?.message || "Please try again.");
+    } finally {
+      artworkInput.disabled = false;
+    }
+  });
   root.querySelector("#toggle-shop").addEventListener("click", async () => {
     const { error } = await supabase.from("shop_status").update({ is_open: !shopOpen, updated_at: new Date().toISOString() }).eq("id", 1);
     if (error) root.querySelector("#shop-state").textContent = "Could not update shop status."; else await refreshStatus();

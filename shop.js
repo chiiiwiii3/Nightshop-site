@@ -38,6 +38,15 @@ root.innerHTML = `
   ${profile.is_owner ? '<section class="shop-panel"><h2>OWNER CONTROLS</h2><button id="toggle-shop">Toggle shop open / closed</button><div class="shop-panel"><h3>EXTERIOR ARTWORK</h3><p class="muted">Choose the approved storefront picture from your phone Gallery. JPG, PNG, or WebP · up to 15 MB.</p><input id="exterior-upload" type="file" accept="image/jpeg,image/png,image/webp"><p id="exterior-upload-status" aria-live="polite"></p></div><div id="owner-orders"></div></section>' : ""}
 `;
 
+// Load the currently published exterior artwork for every visitor.
+const exteriorImage = document.querySelector("#exterior-artwork");
+if (exteriorImage) {
+  const { data: exteriorUrl } = supabase.storage.from("nightshop-artwork").getPublicUrl("exterior/current");
+  exteriorImage.onload = () => document.querySelector("#street-scene")?.classList.add("artwork-mode");
+  exteriorImage.onerror = () => document.querySelector("#street-scene")?.classList.remove("artwork-mode");
+  exteriorImage.src = exteriorUrl.publicUrl;
+}
+
 const catalog = root.querySelector("#catalog");
 const panel = root.querySelector("#order-panel");
 let selected = null, shopOpen = false;

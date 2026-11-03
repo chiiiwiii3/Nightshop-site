@@ -206,6 +206,25 @@ footer{color:#777f91}
   #street-scene{width:100%;margin-left:0;margin-right:0}
   #street-scene.artwork-mode #exterior-artwork{object-fit:contain}
 }
+
+/* Full-screen entrance artwork and separate login view. */
+main{width:100%;max-width:none;margin:0}
+header{position:absolute;z-index:5;top:0;left:0;right:0;padding:12px 10px 6px;pointer-events:none}
+header .crest,header h1,header .subtitle{margin-top:2px;margin-bottom:2px}
+#street-scene{width:100vw;height:100vh;height:100svh;min-height:100vh;min-height:100svh;margin:0;border:0;box-shadow:none}
+#street-scene.artwork-mode #exterior-artwork{object-fit:fill;object-position:center;width:100%;height:100%}
+#login-door{display:none}
+body.login-screen{min-height:100vh;min-height:100svh;overflow:hidden;background:#05070d}
+body.login-screen:before,body.login-screen:after{display:none}
+body.login-screen header,body.login-screen #street-scene,body.login-screen footer{display:none!important}
+body.login-screen main{width:100%;height:100vh;height:100svh;min-height:100vh;min-height:100svh;margin:0;display:grid;place-items:center;padding:20px}
+body.login-screen #login-door{display:block!important;width:min(100%,440px);max-height:calc(100svh - 40px);overflow:auto;margin:0;padding:30px 24px}
+#back-to-street{display:block;margin:0 auto 20px;background:transparent;border:1px solid #d7bd82;color:#d7bd82;box-shadow:none;font-size:11px}
+@media(max-width:560px){
+ #street-scene{height:100vh;height:100svh;min-height:100vh;min-height:100svh}
+ body.login-screen main{padding:16px}
+ body.login-screen #login-door{padding:24px 18px}
+}
 </style>
 </head>
 <body>
@@ -238,6 +257,7 @@ footer{color:#777f91}
  <div class="window-message" id="window-message" hidden><button type="button" id="close-window" aria-label="Close question panel">×</button><b>PRIVATE QUESTION</b><p>Sign in to send the owner a private message.</p></div>
 </section>
 <section id="login-door">
+  <button type="button" id="back-to-street" class="back-link">← BACK TO STREET</button>
   <h2>THE ENTRANCE</h2><p class="muted">Enter your member credentials.</p>
   <form id="login-form">
    <input name="username" type="text" placeholder="Username" autocomplete="username" required>
@@ -260,13 +280,17 @@ footer{color:#777f91}
 const streetScene = document.querySelector("#street-scene");
 const loginDoor = document.querySelector("#login-door");
 document.querySelector("#street-door")?.addEventListener("click", () => {
-  const door = document.querySelector("#street-door");
-  door?.classList.add("door-opening");
+  document.querySelector("#street-door")?.classList.add("door-opening");
+  document.body.classList.add("login-screen");
   if (loginDoor) {
     loginDoor.style.display = "block";
-    loginDoor.scrollIntoView({behavior:"smooth",block:"center"});
-    window.setTimeout(() => loginDoor.querySelector('input[name="username"]')?.focus({preventScroll:true}), 350);
+    window.setTimeout(() => loginDoor.querySelector('input[name="username"]')?.focus({preventScroll:true}), 150);
   }
+});
+document.querySelector("#back-to-street")?.addEventListener("click", () => {
+  document.body.classList.remove("login-screen");
+  if (loginDoor) loginDoor.style.display = "none";
+  document.querySelector("#street-door")?.classList.remove("door-opening");
 });
 const windowMessage = document.querySelector("#window-message");
 document.querySelector("#bathroom-door")?.addEventListener("click", () => {

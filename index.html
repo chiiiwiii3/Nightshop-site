@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080b19">
+<title>The Night Shop</title>
+<style>
+:root{color-scheme:dark;--bg:#080b19;--panel:#15172c;--line:#55458a;--glow:#9270e8;--text:#f4f3ff;--muted:#aaa4c8}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% -10%,#292454,var(--bg) 58%);color:var(--text);font-family:Arial,sans-serif}
+header{text-align:center;padding:32px 16px 12px}.crest{font-size:38px;color:#b9a0ff}h1{font-size:clamp(25px,6vw,38px);letter-spacing:5px;margin:8px 0;color:#e0d4ff}.subtitle{color:var(--muted);letter-spacing:3px;font-size:11px}
+main{width:min(100% - 28px,1050px);margin:20px auto 50px}
+#login-door{width:min(100%,410px);margin:35px auto;padding:28px 22px;background:linear-gradient(145deg,#191b38,#101225);border:1px solid var(--line);border-radius:14px;box-shadow:0 0 35px #7655c455;text-align:center}
+h2{color:#d2c1ff;letter-spacing:2px}input,textarea,select{width:100%;padding:13px;margin:8px 0;border-radius:7px;border:1px solid #49416b;background:#090c1c;color:white;font:inherit}button{padding:13px 18px;border:0;border-radius:7px;background:linear-gradient(90deg,#6244b5,#9270e8);color:white;font-weight:bold;letter-spacing:1px;cursor:pointer}button:disabled{opacity:.5;cursor:wait}.wide{width:100%}
+#status-note,#strike-note{font-size:13px;color:#c6b5ff;min-height:18px}
+#shop-app{display:none}.shop-panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;margin:15px 0}.shop-panel h2{margin-top:0}.muted{color:var(--muted)}.product-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.product-card{background:#101225;border:1px solid #403568;border-radius:10px;padding:16px;text-align:left}.product-card h3{color:#d5c6ff}.product-card button{width:100%}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.hidden{display:none!important}
+footer{text-align:center;padding:28px 10px;color:#77728f;font-size:11px;letter-spacing:2px}
+</style>
+</head>
+<body>
+<header>
+ <div class="crest">♛</div>
+ <h1>THE NIGHT SHOP</h1>
+ <p class="subtitle">PRIVATE ACCESS · MEMBERS ONLY</p>
+</header>
+<main>
+ <section id="login-door">
+  <h2>THE ENTRANCE</h2><p class="muted">Enter your member credentials.</p>
+  <form id="login-form">
+   <input name="username" type="text" placeholder="Username" autocomplete="username" required>
+   <input name="password" type="password" placeholder="Password" autocomplete="current-password" required>
+   <button class="wide" type="submit" id="login-button">UNLOCK THE DOOR</button>
+  </form>
+  <p id="strike-note">Strikes: 0 / 3</p><p id="status-note">Awaiting credentials...</p>
+ </section>
+ <section id="shop-app">
+  <div class="shop-panel"><div class="row"><div><h2 id="member-greeting">WELCOME INSIDE</h2><p class="muted" id="shop-state">Checking shop status…</p></div><button id="sign-out-button" type="button">SIGN OUT</button></div></div>
+  <section class="shop-panel"><h2>THE COLLECTION</h2><div id="product-list" class="product-grid"></div></section>
+  <section class="shop-panel"><h2>YOUR ORDERS</h2><div id="order-history" class="muted">No orders loaded.</div></section>
+  <section class="shop-panel"><h2>PRIVATE MESSAGE</h2><form id="message-form"><textarea name="message" rows="3" maxlength="1000" placeholder="Leave a private message…" required></textarea><button type="submit">SEND MESSAGE</button></form><div id="message-status" class="muted"></div><div id="message-history"></div></section>
+  <section class="shop-panel hidden" id="owner-tools"><h2>OWNER CONTROLS</h2><button id="toggle-shop-button" type="button">TOGGLE SHOP STATUS</button><div id="owner-orders"></div></section>
+ </section>
+</main>
+<footer>THE NIGHT SHOP · PRIVATE ESTABLISHMENT</footer>
+<script type="module" src="./login.js"></script>
+</body>
+</html>

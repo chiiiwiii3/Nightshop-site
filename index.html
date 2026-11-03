@@ -56,7 +56,7 @@ footer{color:#777f91}
 
 /* Owner-uploaded exterior artwork layer */
 #street-scene{isolation:isolate}
-#exterior-artwork{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;display:none}
+#exterior-artwork{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;z-index:1;display:none;background:#05070d}
 #street-scene.artwork-mode #exterior-artwork{display:block}
  #exterior-preview{display:block;width:100%;max-height:320px;object-fit:contain;margin-top:14px;border:1px solid #806b4c;background:#05070d}
  #exterior-preview[hidden]{display:none}
@@ -193,6 +193,19 @@ footer{color:#777f91}
 #street-scene.shop-closed .sign-frame{box-shadow:0 0 0 5px #080b12,0 0 26px #ff365f88;}
 #street-scene:not(.shop-closed) .sign-frame{box-shadow:0 0 0 5px #080b12,0 0 26px #43cfff88;}
 @media(max-width:560px){#street-scene .shop-building{width:98%;height:72%;bottom:13%;}#street-scene .sign-frame{left:27%;right:27%;}#street-scene .entrance-frame{left:25%;width:46%;}#street-scene .bathroom-frame{right:2%;width:19%;height:43%;}}
+
+/* Final display tuning: no rain, and never crop the uploaded photo. */
+#street-scene .rain-layer{display:none!important;animation:none!important}
+#street-scene .wet-street:before,
+#street-scene .puddle,
+#street-scene .street-reflection,
+#street-scene:after{display:none!important}
+#street-scene.artwork-mode{background:#05070d}
+#street-scene.artwork-mode #exterior-artwork{object-fit:contain;object-position:center;width:100%;height:100%}
+@media(max-width:560px){
+  #street-scene{width:100%;margin-left:0;margin-right:0}
+  #street-scene.artwork-mode #exterior-artwork{object-fit:contain}
+}
 </style>
 </head>
 <body>

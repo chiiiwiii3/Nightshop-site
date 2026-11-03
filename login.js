@@ -1,20 +1,58 @@
-import { supabase } from "./supabase-client.js";
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
+
+const SHOP_VERSION = "nightshop-exterior-upload-3";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
 const strikeNote = document.querySelector("#strike-note");
 const button = document.querySelector("#login-button");
 
+// Everyone (signed in or not) sees the exterior. The built-in picture is the default;
+// if the owner has published a replacement from the uploader, that one is used instead.
+function loadPublishedExterior() {
+  const image = document.querySelector("#exterior-artwork");
+  if (!image) return;
+  const { data } = supabase.storage.from("nightshop-artwork").getPublicUrl("exterior/current");
+  const url = data.publicUrl + "?v=" + Math.floor(Date.now() / 60000);
+  const probe = new Image();
+  probe.onload = () => { image.src = url; };
+  probe.src = url; // a 404 simply keeps the built-in picture
+}
+loadPublishedExterior();
+
+// The bathroom door: a private question to the owner (members only).
+const questionForm = document.querySelector("#question-form");
+questionForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const status = document.querySelector("#question-status");
+  const text = questionForm.elements.message.value.trim();
+  if (!text) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    status.textContent = "Sign in through the front door first, then send your question.";
+    return;
+  }
+  const { error } = await supabase.from("messages").insert({ customer_id: session.user.id, message: text });
+  if (error) {
+    console.error("Private question failed:", error);
+    status.textContent = "Message could not be sent.";
+    return;
+  }
+  status.textContent = "Sent privately.";
+  questionForm.reset();
+});
+
+let shopAttempts = 0;
 async function enterShop() {
-  document.querySelector("#login-door")?.classList.add("hidden");
-  document.querySelector("#street-scene")?.classList.add("hidden");
-  document.querySelector(".crest")?.classList.add("hidden");
-  document.querySelector("header h1")?.classList.add("hidden");
-  document.querySelector(".subtitle")?.classList.add("hidden");
   const root = document.querySelector("#shop-app");
   if (!root) throw new Error("Shop container #shop-app is missing from the page.");
+  // Load the shop FIRST. If it fails, the login box (and its message line) is still on screen,
+  // so the person actually sees what went wrong instead of a blank page.
+  const retry = shopAttempts++ ? "&retry=" + shopAttempts : "";
+  await import("./shop.js?v=" + SHOP_VERSION + retry);
+  ["#login-door", "#street-scene", ".crest", "header h1", ".subtitle"]
+    .forEach(selector => document.querySelector(selector)?.classList.add("hidden"));
   root.style.display = "block";
-  await import("./shop.js?v=nightshop-exterior-upload-2");
 }
 
 form?.addEventListener("submit", async (event) => {
@@ -23,11 +61,11 @@ form?.addEventListener("submit", async (event) => {
   note.textContent = "Checking credentials...";
   let stage = "sending login request";
   try {
-    const response = await fetch("https://yppuanqofgpiskffiyvf.supabase.co/functions/v1/member-login", {
+    const response = await fetch(SUPABASE_URL + "/functions/v1/member-login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwcHVhbnFvZmdwaXNrZmZpeXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MTI1MDgsImV4cCI6MjEwOTI4ODUwOH0.tYoFrt1PQ7Ur-XioMyb_SzdDnJwjNUcJw3VXPy_zQAI",
+        "apikey": SUPABASE_ANON_KEY,
       },
       body: JSON.stringify({
         username: form.elements.username.value.trim(),

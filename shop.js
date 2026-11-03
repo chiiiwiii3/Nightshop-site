@@ -6,10 +6,13 @@ if (!user || !root) throw new Error("Member session unavailable");
 
 const { data: profile, error: profileError } = await supabase.from("profiles")
   .select("display_name,is_owner,access_enabled").eq("id", user.id).single();
-if (profileError || !profile?.access_enabled) {
+if (profileError || !profile) {
+  console.error("Profile load failed:", profileError);
+  throw new Error("Could not load your member profile. Ask the owner to check your account.");
+}
+if (!profile.access_enabled) {
   await supabase.auth.signOut();
-  root.textContent = "Your membership is not active. Please contact the owner.";
-  throw new Error("Membership disabled");
+  throw new Error("Your membership is not active. Please contact the owner.");
 }
 
 const safe = value => { const el = document.createElement("span"); el.textContent = value ?? ""; return el.innerHTML; };
@@ -38,15 +41,6 @@ root.innerHTML = `
   <section class="shop-panel"><h2>PRIVATE MESSAGE</h2><textarea id="member-message" rows="3" maxlength="1000" placeholder="Send the owner a private message"></textarea><button id="send-message">Send message</button><p id="message-note" aria-live="polite"></p><div id="message-history"></div></section>
   ${profile.is_owner ? '<section class="shop-panel"><h2>OWNER CONTROLS</h2><button id="toggle-shop">Toggle shop open / closed</button><div id="owner-orders"></div></section>' : ""}
 `;
-
-// Load the currently published exterior artwork for every visitor.
-const exteriorImage = document.querySelector("#exterior-artwork");
-if (exteriorImage) {
-  const { data: exteriorUrl } = supabase.storage.from("nightshop-artwork").getPublicUrl("exterior/current");
-  exteriorImage.onload = () => document.querySelector("#street-scene")?.classList.add("artwork-mode");
-  exteriorImage.onerror = () => document.querySelector("#street-scene")?.classList.remove("artwork-mode");
-  exteriorImage.src = exteriorUrl.publicUrl;
-}
 
 const catalog = root.querySelector("#catalog");
 const panel = root.querySelector("#order-panel");
@@ -138,10 +132,7 @@ if (profile.is_owner) {
       if (error) throw error;
       const { data } = supabase.storage.from("nightshop-artwork").getPublicUrl("exterior/current");
       const image = document.querySelector("#exterior-artwork");
-      image.onload = () => {
-        document.querySelector("#street-scene")?.classList.add("artwork-mode");
-        artworkStatus.textContent = "Exterior artwork is live.";
-      };
+      image.onload = () => { artworkStatus.textContent = "Exterior artwork is live. Sign out to see it on the storefront."; };
       image.onerror = () => { artworkStatus.textContent = "Uploaded, but the preview could not load. Refresh and try again."; };
       image.src = data.publicUrl + "?v=" + Date.now();
     } catch (error) {

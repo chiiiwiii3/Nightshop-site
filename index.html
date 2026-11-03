@@ -54,6 +54,15 @@ footer{color:#777f91}
 @media(min-width:760px){#login-door{margin-top:52px;padding:42px 38px}#shop-app{padding:20px 12px 50px}.shop-panel{padding:28px 30px}}
 
 
+/* Owner-uploaded exterior artwork layer */
+#street-scene{isolation:isolate}
+#exterior-artwork{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;display:none}
+#street-scene.artwork-mode #exterior-artwork{display:block}
+#street-scene.artwork-mode .street-caption,
+#street-scene.artwork-mode .shop-building,
+#street-scene.artwork-mode .wet-street{opacity:0}
+#street-scene.artwork-mode .window-message{opacity:1}
+#street-scene.artwork-mode .rain-layer{z-index:2}
 /* CINEMATIC STREET EXTERIOR */
 #street-scene{position:relative;height:clamp(490px,67vw,690px);min-height:490px;overflow:hidden;margin:8px 0 34px;background:linear-gradient(180deg,#080e1a 0%,#111b2b 48%,#090d16 78%,#05070b 100%);border:1px solid #28384a;box-shadow:0 22px 55px #000c,inset 0 0 80px #000b}
 .city-sky{position:absolute;inset:0 0 25%;opacity:.85;background:linear-gradient(180deg,#090f1d,#172337 65%,#263346)}
@@ -192,7 +201,7 @@ footer{color:#777f91}
 </header>
 <main>
  
-<section id="street-scene" class="shop-closed" aria-label="The Night Shop exterior">
+<section id="street-scene" class="shop-closed" aria-label="The Night Shop exterior">\n <img id="exterior-artwork" alt="The Night Shop exterior artwork">
  <div class="city-sky"><span class="tower t1"></span><span class="tower t2"></span><span class="tower t3"></span><span class="tower t4"></span><span class="moon-haze"></span></div>
  <div class="rain-layer"></div>
  <div class="shop-building">

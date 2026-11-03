@@ -7,6 +7,7 @@ const button = document.querySelector("#login-button");
 
 async function enterShop() {
   document.querySelector("#login-door")?.classList.add("hidden");
+  document.querySelector("#street-scene")?.classList.add("hidden");
   document.querySelector(".crest")?.classList.add("hidden");
   document.querySelector("header h1")?.classList.add("hidden");
   document.querySelector(".subtitle")?.classList.add("hidden");

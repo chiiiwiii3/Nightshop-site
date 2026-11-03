@@ -131,6 +131,32 @@ footer{color:#777f91}
 #lounge-scene.lights-low{filter:brightness(.68) saturate(.8)}
 @media(max-width:560px){.shop-building{width:96%;height:67%;bottom:13%}.sign-frame{left:15%;right:15%}.front-window{left:4%;width:37%}.entrance-frame{right:5%;width:39%}.brick{width:7%}.street-caption{top:13px}.street-caption b{font-size:8px}.scene-bottom{font-size:7px}.lounge-bar{right:3%;width:26%}.lounge-sofa{width:48%}.lounge-pool{left:37%;width:34%}.lounge-hologram{left:3%;width:30%}.lounge-hologram.h2{right:30%;width:18%}.lounge-hologram.h3{right:2%;width:23%}}
 
+
+/* Extra cinematic depth, animated rain, and door movement */
+#street-scene{perspective:1100px}
+.shop-building{transform:translateX(-50%) rotateX(1deg);transform-style:preserve-3d}
+.facade{transform-style:preserve-3d;box-shadow:inset 0 0 50px #000b,0 18px 25px #0009}
+.facade:after{content:"";position:absolute;z-index:1;left:-3%;right:-3%;top:-5%;height:6%;background:linear-gradient(#394654,#111923);border:1px solid #697581;box-shadow:0 7px 16px #0009}
+.front-window,.entrance-frame{transform:translateZ(8px)}
+.wet-street:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(175deg,transparent 0 18px,#6a94aa12 19px 20px,transparent 21px 39px);opacity:.8}
+.rain-layer{background:repeating-linear-gradient(103deg,transparent 0 17px,#c6e8fa 18px,#c6e8fa 19px,transparent 20px 43px);animation:rainfall .65s linear infinite}
+@keyframes rainfall{from{background-position:0 0}to{background-position:0 42px}}
+#street-scene:after{content:"";position:absolute;z-index:2;left:0;right:0;bottom:18%;height:9%;background:linear-gradient(180deg,transparent,#03070d66);pointer-events:none}
+.street-door.door-opening{transform-origin:left center;transform:perspective(600px) rotateY(-24deg);filter:brightness(1.3);transition:transform .55s ease,filter .55s}
+.street-door{transition:transform .45s ease,filter .45s}
+#street-scene .window-message{backdrop-filter:blur(12px)}
+#lounge-scene{perspective:900px}
+.lounge-ceiling{transform:perspective(700px) rotateX(-8deg);transform-origin:top}
+.lounge-bar{transform:perspective(450px) rotateY(-7deg);box-shadow:-12px 10px 24px #0008,0 0 22px #a7794933}
+.lounge-sofa{transform:perspective(500px) rotateY(7deg);box-shadow:inset 0 8px #b4977c,0 15px 18px #000,12px 8px 0 #211d1d}
+.lounge-pool{transform:perspective(400px) rotateX(8deg);box-shadow:0 10px 16px #000,0 0 0 2px #a37c56}
+.lounge-floor{background:repeating-linear-gradient(90deg,#161b25 0 70px,#202632 71px 73px),repeating-linear-gradient(0deg,transparent 0 40px,#d7bd8210 41px)}
+.lounge-hologram{animation:holo-float 4s ease-in-out infinite}
+.lounge-hologram.h2{animation-delay:-1.3s}.lounge-hologram.h3{animation-delay:-2.5s}
+@keyframes holo-float{0%,100%{translate:0 0}50%{translate:0 -8px}}
+#lounge-scene.alternate-view .lounge-title{letter-spacing:8px;text-shadow:0 0 20px #4acfff}
+#lounge-scene.alternate-view .lounge-hologram{transform:perspective(250px) rotateY(-10deg) scale(1.06)}
+
 </style>
 </head>
 <body>

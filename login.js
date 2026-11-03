@@ -14,7 +14,7 @@ async function enterShop() {
   const root = document.querySelector("#shop-app");
   if (!root) throw new Error("Shop container #shop-app is missing from the page.");
   root.style.display = "block";
-  await import("./shop.js?v=nightshop-exterior-upload-1");
+  await import("./shop.js?v=nightshop-exterior-upload-2");
 }
 
 form?.addEventListener("submit", async (event) => {

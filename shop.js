@@ -22,7 +22,7 @@ const choices = [
 
 root.innerHTML = `
   <section class="shop-panel"><div class="row"><div><p class="muted">MEMBER LOUNGE</p><h2>Welcome in, ${safe(profile.display_name || "member")}</h2><p id="shop-state">Checking shop status…</p></div><button id="sign-out" type="button">Sign out</button></div></section>
-  ${profile.is_owner ? '<section class="shop-panel" id="exterior-artwork-tools"><h2>EXTERIOR ARTWORK</h2><p class="muted">Upload the approved storefront picture from your phone Gallery. JPG, PNG, or WebP · up to 15 MB.</p><input id="exterior-upload" type="file" accept="image/jpeg,image/png,image/webp"><p id="exterior-upload-status" aria-live="polite"></p></section>' : ""}
+  ${profile.is_owner ? '<section class="shop-panel" id="exterior-artwork-tools"><h2>EXTERIOR ARTWORK</h2><p class="muted">Choose the approved storefront picture from your phone Gallery. JPG, PNG, or WebP · up to 15 MB.</p><input id="exterior-upload" type="file" accept="image/jpeg,image/png,image/webp"><p id="exterior-upload-status" aria-live="polite">No new upload selected.</p><img id="exterior-preview" alt="Current Night Shop exterior artwork" hidden></section>' : ""}
   
   <section id="lounge-scene" aria-label="The Night Shop private lounge">
     <div class="lounge-ceiling"></div><h2 class="lounge-title">WELCOME TO THE PRIVATE LOUNGE</h2>
@@ -38,15 +38,6 @@ root.innerHTML = `
   <section class="shop-panel"><h2>PRIVATE MESSAGE</h2><textarea id="member-message" rows="3" maxlength="1000" placeholder="Send the owner a private message"></textarea><button id="send-message">Send message</button><p id="message-note" aria-live="polite"></p><div id="message-history"></div></section>
   ${profile.is_owner ? '<section class="shop-panel"><h2>OWNER CONTROLS</h2><button id="toggle-shop">Toggle shop open / closed</button><div id="owner-orders"></div></section>' : ""}
 `;
-
-// Load the currently published exterior artwork for every visitor.
-const exteriorImage = document.querySelector("#exterior-artwork");
-if (exteriorImage) {
-  const { data: exteriorUrl } = supabase.storage.from("nightshop-artwork").getPublicUrl("exterior/current");
-  exteriorImage.onload = () => document.querySelector("#street-scene")?.classList.add("artwork-mode");
-  exteriorImage.onerror = () => document.querySelector("#street-scene")?.classList.remove("artwork-mode");
-  exteriorImage.src = exteriorUrl.publicUrl;
-}
 
 const catalog = root.querySelector("#catalog");
 const panel = root.querySelector("#order-panel");
@@ -121,6 +112,11 @@ root.querySelector("#sign-out").addEventListener("click", async () => { await su
 if (profile.is_owner) {
   const artworkInput = root.querySelector("#exterior-upload");
   const artworkStatus = root.querySelector("#exterior-upload-status");
+  const artworkPreview = root.querySelector("#exterior-preview");
+  const { data: currentArtwork } = supabase.storage.from("nightshop-artwork").getPublicUrl("exterior/current");
+  artworkPreview.onload = () => { artworkPreview.hidden = false; };
+  artworkPreview.onerror = () => { artworkPreview.hidden = true; };
+  artworkPreview.src = currentArtwork.publicUrl + "?v=" + Date.now();
   artworkInput?.addEventListener("change", async () => {
     const file = artworkInput.files?.[0];
     if (!file) return;
@@ -137,13 +133,12 @@ if (profile.is_owner) {
       });
       if (error) throw error;
       const { data } = supabase.storage.from("nightshop-artwork").getPublicUrl("exterior/current");
-      const image = document.querySelector("#exterior-artwork");
-      image.onload = () => {
-        document.querySelector("#street-scene")?.classList.add("artwork-mode");
-        artworkStatus.textContent = "Exterior artwork is live.";
+      artworkPreview.onload = () => {
+        artworkPreview.hidden = false;
+        artworkStatus.textContent = "Exterior artwork uploaded and saved. It will appear on the entrance screen.";
       };
-      image.onerror = () => { artworkStatus.textContent = "Uploaded, but the preview could not load. Refresh and try again."; };
-      image.src = data.publicUrl + "?v=" + Date.now();
+      artworkPreview.onerror = () => { artworkStatus.textContent = "Uploaded, but the preview could not load. Refresh and try again."; };
+      artworkPreview.src = data.publicUrl + "?v=" + Date.now();
     } catch (error) {
       console.error("Exterior artwork upload failed:", error);
       artworkStatus.textContent = "Upload failed: " + (error?.message || "Please try again.");

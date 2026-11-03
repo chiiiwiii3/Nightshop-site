@@ -6,15 +6,29 @@ const strikeNote = document.querySelector("#strike-note");
 const button = document.querySelector("#login-button");
 
 async function enterShop() {
+  const root = document.querySelector("#shop-app");
+  if (!root) throw new Error("Shop container #shop-app is missing from the page.");
+  root.style.display = "block";
+  try {
+    await import("./shop.js?v=nightshop-exterior-upload-3");
+  } catch (error) {
+    root.style.display = "none";
+    throw error;
+  }
   document.querySelector("#login-door")?.classList.add("hidden");
   document.querySelector("#street-scene")?.classList.add("hidden");
   document.querySelector(".crest")?.classList.add("hidden");
   document.querySelector("header h1")?.classList.add("hidden");
   document.querySelector(".subtitle")?.classList.add("hidden");
-  const root = document.querySelector("#shop-app");
-  if (!root) throw new Error("Shop container #shop-app is missing from the page.");
-  root.style.display = "block";
-  await import("./shop.js?v=nightshop-exterior-upload-2");
+}
+
+// Load the public exterior artwork on the entrance screen, before sign-in.
+const exteriorImage = document.querySelector("#exterior-artwork");
+if (exteriorImage) {
+  const { data: exteriorUrl } = supabase.storage.from("nightshop-artwork").getPublicUrl("exterior/current");
+  exteriorImage.onload = () => document.querySelector("#street-scene")?.classList.add("artwork-mode");
+  exteriorImage.onerror = () => document.querySelector("#street-scene")?.classList.remove("artwork-mode");
+  exteriorImage.src = exteriorUrl.publicUrl + "?v=" + Date.now();
 }
 
 form?.addEventListener("submit", async (event) => {
@@ -57,9 +71,13 @@ form?.addEventListener("submit", async (event) => {
     }
   } catch (error) {
     console.error("Night Shop login error during " + stage + ":", error);
-    note.textContent = stage === "opening the shop"
-      ? "Your login worked, but the shop could not load. " + (error?.message || "")
-      : "Problem while " + stage + ". " + (error?.message || "Please try again.");
+    if (stage === "opening the shop") {
+      note.textContent = "Your login worked, but the shop could not load. " + (error?.message || "Please try again.");
+    } else {
+      note.textContent = "Problem while " + stage + ". " + (error?.message || "Please try again.");
+    }
+    const loginDoor = document.querySelector("#login-door");
+    if (loginDoor) loginDoor.style.display = "block";
   } finally {
     button.disabled = false;
   }
@@ -71,6 +89,8 @@ if (session) {
     await enterShop();
   } catch (error) {
     console.error("Night Shop session restore error:", error);
+    const loginDoor = document.querySelector("#login-door");
+    if (loginDoor) loginDoor.style.display = "block";
     if (note) note.textContent = "Your session is saved, but the shop could not load. " + (error?.message || "");
   }
 }

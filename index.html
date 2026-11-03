@@ -54,70 +54,27 @@ footer{color:#777f91}
 @media(min-width:760px){#login-door{margin-top:52px;padding:42px 38px}#shop-app{padding:20px 12px 50px}.shop-panel{padding:28px 30px}}
 
 
-/* Owner-uploaded exterior artwork layer */
-#street-scene{isolation:isolate}
-#exterior-artwork{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;z-index:1;display:none;background:#05070d}
-#street-scene.artwork-mode #exterior-artwork{display:block}
- #exterior-preview{display:block;width:100%;max-height:320px;object-fit:contain;margin-top:14px;border:1px solid #806b4c;background:#05070d}
- #exterior-preview[hidden]{display:none}
-#street-scene.artwork-mode .street-caption,
-#street-scene.artwork-mode .shop-building,
-#street-scene.artwork-mode .wet-street{opacity:0}
-#street-scene.artwork-mode .window-message{opacity:1}
-#street-scene.artwork-mode .rain-layer{z-index:2}
-/* CINEMATIC STREET EXTERIOR */
-#street-scene{position:relative;height:clamp(490px,67vw,690px);min-height:490px;overflow:hidden;margin:8px 0 34px;background:linear-gradient(180deg,#080e1a 0%,#111b2b 48%,#090d16 78%,#05070b 100%);border:1px solid #28384a;box-shadow:0 22px 55px #000c,inset 0 0 80px #000b}
-.city-sky{position:absolute;inset:0 0 25%;opacity:.85;background:linear-gradient(180deg,#090f1d,#172337 65%,#263346)}
-.tower{position:absolute;bottom:0;width:13%;background:linear-gradient(90deg,#080d17,#1b2635 48%,#080d17);border-top:2px solid #29394b}
-.tower:after{content:"";position:absolute;inset:12px 8px;background:repeating-linear-gradient(90deg,transparent 0 14px,#7ac8d033 15px 17px),repeating-linear-gradient(0deg,transparent 0 19px,#7ac8d033 20px 22px)}
-.t1{left:2%;height:65%}.t2{left:17%;height:84%;width:10%}.t3{right:15%;height:73%;width:12%}.t4{right:1%;height:91%;width:13%}
-.moon-haze{position:absolute;width:45vw;height:20vw;max-height:210px;left:28%;top:10%;background:#4b7a9b22;filter:blur(38px);border-radius:50%}
-.rain-layer{position:absolute;inset:0;pointer-events:none;opacity:.23;background:repeating-linear-gradient(103deg,transparent 0 17px,#b8d7e8 18px,#b8d7e8 19px,transparent 20px 43px);mask-image:linear-gradient(#000,transparent 85%)}
-.street-caption{position:absolute;z-index:2;top:20px;left:0;right:0;text-align:center;display:grid;gap:7px;font:9px Arial,sans-serif;letter-spacing:3px;color:#9bb5c8}
-.street-caption b{font-weight:normal;color:#d7bd82;font-size:10px}
-.shop-building{position:absolute;z-index:3;left:50%;bottom:10%;transform:translateX(-50%);width:min(84%,760px);height:72%;filter:drop-shadow(0 18px 22px #000)}
-.roofline{height:7%;background:linear-gradient(#303b4b,#101722);border:1px solid #536070;display:flex;align-items:center;justify-content:space-around;color:#aab8c5;font:8px Arial;letter-spacing:3px}
-.roofline i{height:2px;width:18%;background:#37c7ff;box-shadow:0 0 12px #37c7ff}
-.facade{height:83%;position:relative;background:linear-gradient(90deg,#141b27,#29313b 12%,#171f2b 50%,#2b333c 88%,#121a25);border:5px solid #252f3c;box-shadow:inset 0 0 50px #000b}
-.facade:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 35px,#05080d44 36px 39px),repeating-linear-gradient(90deg,transparent 0 74px,#05080d33 75px 78px);opacity:.65}
-.brick{position:absolute;top:0;bottom:0;width:12%;background:linear-gradient(90deg,#0b111b,#29313a,#0c121c);border-inline:1px solid #59616a44}
-.brick-left{left:0}.brick-right{right:0}
-.sign-frame{position:absolute;z-index:2;top:5%;left:19%;right:19%;height:19%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#090e18,#172536);border:2px solid #b99c66;box-shadow:0 0 0 4px #0a1019,0 0 24px #35bfff66,inset 0 0 25px #35bfff22}
-.sign-frame strong{font:clamp(13px,2.6vw,25px) Georgia,serif;letter-spacing:clamp(2px,.6vw,7px);color:#e7e3d8;text-shadow:0 0 7px #46cfff,0 0 19px #46cfff}
-.sign-frame small{font:8px Arial;letter-spacing:3px;color:#d7bd82;margin-top:4px}
-.sign-crown{font-size:18px;color:#d7bd82;line-height:1;text-shadow:0 0 12px #d7bd82}
-.front-window{position:absolute;z-index:2;left:7%;bottom:9%;width:35%;height:43%;overflow:hidden;border:7px solid #111923;outline:1px solid #82909b;background:linear-gradient(145deg,#102538,#070b13);box-shadow:0 0 0 2px #4bbce0,0 0 22px #42bfff66,inset 0 0 35px #38bfff44}
-.window-glow{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,#a36bce66,#2677a355 45%,#060c16 80%)}
-.blind{position:absolute;z-index:2;top:0;left:0;right:0;height:23%;background:repeating-linear-gradient(0deg,#18202b 0 4px,#65717d 5px,#18202b 7px)}
-.window-couch{position:absolute;bottom:13%;left:13%;width:70%;height:24%;border-radius:18px 18px 5px 5px;background:linear-gradient(#876a59,#332b2c);box-shadow:0 -7px 0 #a18470,inset 0 -7px #17171d}
-.window-lamp{position:absolute;right:13%;top:26%;width:3px;height:40%;background:#9b8060;box-shadow:0 0 22px 8px #d6a65b88}
-.window-neon{position:absolute;z-index:3;top:28%;left:8%;font: bold 15px Arial;color:#6ce2ff;text-shadow:0 0 7px #31caff,0 0 18px #31caff;text-align:center;transform:rotate(-4deg)}
-.window-neon small{font-size:6px;letter-spacing:2px}
-#window-button{position:absolute;z-index:5;bottom:5px;left:50%;transform:translateX(-50%);padding:6px 8px;font:8px Arial;letter-spacing:1px;white-space:nowrap}
-.entrance-frame{position:absolute;z-index:3;right:9%;bottom:0;width:34%;height:57%;background:#080d14;border:7px solid #111923;outline:1px solid #87939e;box-shadow:0 0 0 2px #3abce8,0 0 26px #39caff55}
-.door-top{height:13%;display:grid;place-items:center;color:#d7bd82;font:8px Arial;letter-spacing:2px;background:#101a26;border-bottom:1px solid #8b754d}
-.street-door{position:absolute;inset:13% 0 0;width:100%;height:87%;padding:0;background:linear-gradient(90deg,#0d1a27,#203448 45%,#09111d);border:0;box-shadow:inset 0 0 35px #3abfff22;cursor:pointer}
-.door-glass{position:absolute;inset:8% 12%;border:1px solid #5c91a9;background:linear-gradient(115deg,#76dfff22,#07111d 45%,#5ed9ff11);display:grid;place-items:center}
-.door-glass b{font-size:32px;color:#d7bd82;text-shadow:0 0 12px #d7bd82}
-.door-glass small{position:absolute;bottom:8px;color:#a8d9eb;font:8px Arial;letter-spacing:2px}
-.door-reflection{position:absolute;left:15%;top:0;width:18%;height:100%;background:#a9eaff12;transform:skew(-18deg)}
-.door-handle{position:absolute;right:12%;top:49%;width:5px;height:28px;background:#d7bd82;box-shadow:0 0 7px #d7bd82}
-.door-step{position:absolute;bottom:-12px;left:-10%;width:120%;height:12px;background:linear-gradient(#626b73,#161b23);border-bottom:2px solid #38bfff66}
-.wall-light{position:absolute;z-index:3;top:34%;width:9px;height:30px;background:#b9edff;box-shadow:0 0 12px 7px #42cfff88}
-.wall-light-left{left:3%}.wall-light-right{right:3%}
-.building-base{height:10%;display:flex;align-items:center;justify-content:space-around;background:#0a0f17;border:1px solid #34404c;color:#8795a2;font:8px Arial;letter-spacing:3px}
-.wet-street{position:absolute;bottom:0;left:0;right:0;height:19%;background:linear-gradient(180deg,#111923,#05070b);border-top:1px solid #374858}
-.puddle{position:absolute;height:15px;border-radius:50%;background:#49bde922;filter:blur(5px)}
-.p1{left:10%;top:45%;width:24%}.p2{right:7%;top:25%;width:32%}
-.street-reflection{position:absolute;left:34%;top:0;width:34%;height:100%;background:linear-gradient(180deg,#37bfff22,transparent);filter:blur(13px);transform:skew(-24deg)}
-.window-message{position:absolute;z-index:8;right:5%;bottom:8%;width:min(290px,88%);padding:18px;background:#0a1321f2;border:1px solid #4bcfff;box-shadow:0 0 28px #35bfff66;color:#e8f7ff}
-.window-message b{color:#9be5ff;letter-spacing:2px;font:11px Arial}.window-message p{font:13px Arial;line-height:1.5;color:#c5ced8}
-.window-message button{float:right;padding:3px 9px}
-.scene-bottom{position:absolute;z-index:4;bottom:10px;left:0;right:0;display:flex;justify-content:space-around;color:#7e93a5;font:8px Arial;letter-spacing:1px}
-#street-scene.shop-closed .sign-frame strong,#street-scene.shop-closed .window-neon{color:#ff5570;text-shadow:0 0 9px #ff365f,0 0 20px #ff365f}
-#street-scene.shop-closed .sign-frame{box-shadow:0 0 0 4px #0a1019,0 0 24px #ff365f66}
-#street-scene.shop-closed .front-window{box-shadow:0 0 0 2px #ff365f,0 0 22px #ff365f66}
-#street-door:active{transform:scale(.985)}
+
+/* THE EXTERIOR — the approved storefront picture, scaled to fit any screen.
+   The picture and the two clickable doors live in one 16:9 box, so the doors always stay on top of the artwork. */
+#street-scene{position:relative;width:100%;max-width:1180px;margin:8px auto 34px;overflow:hidden;background:#05070d;border:1px solid #28384a;box-shadow:0 22px 55px #000c}
+.exterior-frame{position:relative;width:100%;aspect-ratio:1672 / 941}
+#exterior-artwork{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hotspot{position:absolute;z-index:3;padding:0;margin:0;border:0;border-radius:6px;background:transparent;box-shadow:none;text-transform:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hotspot:hover{filter:none;box-shadow:none;background:rgba(255,226,170,.07)}
+.hotspot:focus-visible{outline:2px solid #43cfff;outline-offset:2px}
+.door-hotspot{left:32%;top:28%;width:25%;height:51%}
+.bath-hotspot{left:81%;top:32%;width:11%;height:48%}
+.door-hotspot.door-opening{background:rgba(255,226,170,.2);transition:background .45s}
+.tap-hint{position:absolute;z-index:2;left:0;right:0;bottom:2.2%;margin:0;text-align:center;font:clamp(8px,1.5vw,11px) Arial,sans-serif;letter-spacing:3px;color:#ffd9a0;text-shadow:0 0 10px #000,0 0 16px #ff365f88;pointer-events:none}
+.window-message{position:absolute;z-index:8;right:2%;bottom:4%;width:min(320px,94%);padding:14px 16px;background:#0a1321f2;border:1px solid #4bcfff;box-shadow:0 0 28px #35bfff66;color:#e8f7ff;text-align:left;backdrop-filter:blur(12px)}
+.window-message b{color:#9be5ff;letter-spacing:2px;font:11px Arial}
+.window-message textarea{margin:8px 0;font-size:14px}
+.window-message form button{width:100%}
+.window-message #close-window{float:right;padding:3px 9px}
+#question-status{font:12px Arial;min-height:16px;margin:6px 0 0}
+@media(max-width:560px){.window-message{position:static;width:100%;box-shadow:none}}
+
 /* INTERIOR LOUNGE */
 #lounge-scene{position:relative;min-height:390px;height:clamp(390px,53vw,540px);overflow:hidden;margin:0 0 20px;border:1px solid #826b4c;background:linear-gradient(180deg,#0c111d,#151a26 54%,#090d14);box-shadow:0 20px 45px #000b}
 .lounge-ceiling{position:absolute;inset:0 0 50%;background:radial-gradient(ellipse at 50% 110%,#73519a55,transparent 65%),linear-gradient(#090d17,#202331)}
@@ -140,22 +97,7 @@ footer{color:#777f91}
 .lounge-controls{position:absolute;z-index:7;left:12px;bottom:12px;display:flex;gap:8px}
 .lounge-controls button{padding:8px 11px;font:9px Arial;letter-spacing:1px}
 #lounge-scene.lights-low{filter:brightness(.68) saturate(.8)}
-@media(max-width:560px){.shop-building{width:96%;height:67%;bottom:13%}.sign-frame{left:15%;right:15%}.front-window{left:4%;width:37%}.entrance-frame{right:5%;width:39%}.brick{width:7%}.street-caption{top:13px}.street-caption b{font-size:8px}.scene-bottom{font-size:7px}.lounge-bar{right:3%;width:26%}.lounge-sofa{width:48%}.lounge-pool{left:37%;width:34%}.lounge-hologram{left:3%;width:30%}.lounge-hologram.h2{right:30%;width:18%}.lounge-hologram.h3{right:2%;width:23%}}
-
-
-/* Extra cinematic depth, animated rain, and door movement */
-#street-scene{perspective:1100px}
-.shop-building{transform:translateX(-50%) rotateX(1deg);transform-style:preserve-3d}
-.facade{transform-style:preserve-3d;box-shadow:inset 0 0 50px #000b,0 18px 25px #0009}
-.facade:after{content:"";position:absolute;z-index:1;left:-3%;right:-3%;top:-5%;height:6%;background:linear-gradient(#394654,#111923);border:1px solid #697581;box-shadow:0 7px 16px #0009}
-.front-window,.entrance-frame{transform:translateZ(8px)}
-.wet-street:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(175deg,transparent 0 18px,#6a94aa12 19px 20px,transparent 21px 39px);opacity:.8}
-.rain-layer{background:repeating-linear-gradient(103deg,transparent 0 17px,#c6e8fa 18px,#c6e8fa 19px,transparent 20px 43px);animation:rainfall .65s linear infinite}
-@keyframes rainfall{from{background-position:0 0}to{background-position:0 42px}}
-#street-scene:after{content:"";position:absolute;z-index:2;left:0;right:0;bottom:18%;height:9%;background:linear-gradient(180deg,transparent,#03070d66);pointer-events:none}
-.street-door.door-opening{transform-origin:left center;transform:perspective(600px) rotateY(-24deg);filter:brightness(1.3);transition:transform .55s ease,filter .55s}
-.street-door{transition:transform .45s ease,filter .45s}
-#street-scene .window-message{backdrop-filter:blur(12px)}
+@media(max-width:560px){.lounge-bar{right:3%;width:26%}.lounge-sofa{width:48%}.lounge-pool{left:37%;width:34%}.lounge-hologram{left:3%;width:30%}.lounge-hologram.h2{right:30%;width:18%}.lounge-hologram.h3{right:2%;width:23%}}
 #lounge-scene{perspective:900px}
 .lounge-ceiling{transform:perspective(700px) rotateX(-8deg);transform-origin:top}
 .lounge-bar{transform:perspective(450px) rotateY(-7deg);box-shadow:-12px 10px 24px #0008,0 0 22px #a7794933}
@@ -168,63 +110,6 @@ footer{color:#777f91}
 #lounge-scene.alternate-view .lounge-title{letter-spacing:8px;text-shadow:0 0 20px #4acfff}
 #lounge-scene.alternate-view .lounge-hologram{transform:perspective(250px) rotateY(-10deg) scale(1.06)}
 
-
-/* THE NIGHT SHOP — approved minimal crown-and-side-door exterior */
-#street-scene{height:clamp(520px,72vw,720px);min-height:520px;background:linear-gradient(180deg,#070b14,#121a27 60%,#05070b);border:0;}
-#street-scene .street-caption,#street-scene .roofline,#street-scene .building-base,#street-scene .front-window{display:none!important}
-#street-scene .shop-building{width:min(94%,900px);height:78%;bottom:9%;}
-#street-scene .facade{height:100%;background:linear-gradient(90deg,#080d16,#222832 15%,#101721 50%,#252b34 85%,#080d16);border:7px solid #141b26;box-shadow:inset 0 0 65px #000,0 15px 35px #000;}
-#street-scene .facade:before{background:repeating-linear-gradient(0deg,transparent 0 42px,#05080d55 43px 46px),repeating-linear-gradient(90deg,transparent 0 90px,#05080d44 91px 94px);}
-#street-scene .sign-frame{top:4%;left:30%;right:30%;height:22%;background:linear-gradient(145deg,#080b12,#171b23);border:2px solid #8e7954;box-shadow:0 0 0 5px #080b12,0 0 26px #ff365f66;}
-#street-scene .three-crown{width:min(70%,150px);height:75%;color:#ff365f;filter:drop-shadow(0 0 9px currentColor) drop-shadow(0 0 19px currentColor);}
-#street-scene:not(.shop-closed) .three-crown{color:#43cfff;}
-#street-scene .entrance-frame{left:30%;right:auto;bottom:0;width:39%;height:66%;background:#070b12;border:7px solid #111923;outline:1px solid #8c969f;box-shadow:0 0 0 2px #ff365f,0 0 24px #ff365f66;}
-#street-scene:not(.shop-closed) .entrance-frame{box-shadow:0 0 0 2px #43cfff,0 0 24px #43cfff66;}
-#street-scene .street-door{inset:0;width:100%;height:100%;background:linear-gradient(90deg,#080c13,#171e29 50%,#080c13);border:0;box-shadow:inset 0 0 35px #000;}
-#street-scene .door-glass{inset:5% 7%;border:1px solid #514638;background:linear-gradient(110deg,#ffffff0a,#0008 50%,#ffffff08);}
-#street-scene .door-glass b,#street-scene .door-glass small{display:none;}
-#street-scene .door-handle{right:12%;height:45px;background:#c9aa70;}
-#street-scene .bathroom-frame{position:absolute;z-index:4;right:5%;bottom:0;width:17%;height:49%;border:5px solid #111923;outline:1px solid #7d8792;background:#080b12;box-shadow:0 0 0 2px #d7bd82,0 0 15px #d7bd8244;}
-#street-scene .bathroom-door{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;border-radius:0;background:linear-gradient(90deg,#090d15,#202631 50%,#090d15);box-shadow:inset 0 0 25px #000;display:grid;place-items:center;}
-#street-scene .bathroom-door span{font:clamp(13px,2vw,21px) Arial,sans-serif;color:#d7bd82;border:1px solid #9a8054;padding:8px 5px;white-space:nowrap;text-shadow:0 0 8px #d7bd82;}
-#street-scene .bathroom-door:after{content:"";position:absolute;right:9%;top:50%;height:25px;width:4px;background:#d7bd82;}
-#street-scene .wall-light{box-shadow:0 0 12px 7px #ff365f88;}
-#street-scene .wall-light-right{box-shadow:0 0 12px 7px #43cfff88;}
-#street-scene.shop-closed .sign-frame{box-shadow:0 0 0 5px #080b12,0 0 26px #ff365f88;}
-#street-scene:not(.shop-closed) .sign-frame{box-shadow:0 0 0 5px #080b12,0 0 26px #43cfff88;}
-@media(max-width:560px){#street-scene .shop-building{width:98%;height:72%;bottom:13%;}#street-scene .sign-frame{left:27%;right:27%;}#street-scene .entrance-frame{left:25%;width:46%;}#street-scene .bathroom-frame{right:2%;width:19%;height:43%;}}
-
-/* Final display tuning: no rain, and never crop the uploaded photo. */
-#street-scene .rain-layer{display:none!important;animation:none!important}
-#street-scene .wet-street:before,
-#street-scene .puddle,
-#street-scene .street-reflection,
-#street-scene:after{display:none!important}
-#street-scene.artwork-mode{background:#05070d}
-#street-scene.artwork-mode #exterior-artwork{object-fit:contain;object-position:center;width:100%;height:100%}
-@media(max-width:560px){
-  #street-scene{width:100%;margin-left:0;margin-right:0}
-  #street-scene.artwork-mode #exterior-artwork{object-fit:contain}
-}
-
-/* Full-screen entrance artwork and separate login view. */
-main{width:100%;max-width:none;margin:0}
-header{position:absolute;z-index:5;top:0;left:0;right:0;padding:12px 10px 6px;pointer-events:none}
-header .crest,header h1,header .subtitle{margin-top:2px;margin-bottom:2px}
-#street-scene{width:100vw;height:100vh;height:100svh;min-height:100vh;min-height:100svh;margin:0;border:0;box-shadow:none}
-#street-scene.artwork-mode #exterior-artwork{object-fit:fill;object-position:center;width:100%;height:100%}
-#login-door{display:none}
-body.login-screen{min-height:100vh;min-height:100svh;overflow:hidden;background:#05070d}
-body.login-screen:before,body.login-screen:after{display:none}
-body.login-screen header,body.login-screen #street-scene,body.login-screen footer{display:none!important}
-body.login-screen main{width:100%;height:100vh;height:100svh;min-height:100vh;min-height:100svh;margin:0;display:grid;place-items:center;padding:20px}
-body.login-screen #login-door{display:block!important;width:min(100%,440px);max-height:calc(100svh - 40px);overflow:auto;margin:0;padding:30px 24px}
-#back-to-street{display:block;margin:0 auto 20px;background:transparent;border:1px solid #d7bd82;color:#d7bd82;box-shadow:none;font-size:11px}
-@media(max-width:560px){
- #street-scene{height:100vh;height:100svh;min-height:100vh;min-height:100svh}
- body.login-screen main{padding:16px}
- body.login-screen #login-door{padding:24px 18px}
-}
 </style>
 </head>
 <body>
@@ -235,29 +120,24 @@ body.login-screen #login-door{display:block!important;width:min(100%,440px);max-
 </header>
 <main>
  
-<section id="street-scene" class="shop-closed" aria-label="The Night Shop exterior">
- <img id="exterior-artwork" alt="The Night Shop exterior artwork">
- <div class="city-sky"><span class="tower t1"></span><span class="tower t2"></span><span class="tower t3"></span><span class="tower t4"></span><span class="moon-haze"></span></div>
- <div class="rain-layer"></div>
- <div class="shop-building">
-  <div class="facade">
-   <div class="brick brick-left"></div><div class="brick brick-right"></div>
-   <div class="sign-frame" aria-label="Three-point crown"><svg class="three-crown" viewBox="0 0 120 78" aria-hidden="true"><path d="M10 18 L37 48 L60 7 L83 48 L110 18 L101 65 L19 65 Z" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/><path d="M19 65 H101" stroke="currentColor" stroke-width="7"/></svg></div>
-   <div class="entrance-frame">
-    <button type="button" id="street-door" class="street-door" aria-label="Enter The Night Shop">
-     <span class="door-glass"><i class="door-reflection"></i></span><span class="door-handle"></span>
-    </button>
-    <div class="door-step"></div>
-   </div>
-   <div class="bathroom-frame"><button type="button" id="bathroom-door" class="bathroom-door" aria-label="Open the private question door"><span aria-hidden="true">♂ ♀</span></button></div>
-   <div class="wall-light wall-light-left"></div><div class="wall-light wall-light-right"></div>
+<section id="street-scene" aria-label="The Night Shop exterior">
+ <div class="exterior-frame">
+  <img id="exterior-artwork" src="./exterior.jpg" width="1672" height="941" alt="The Night Shop at night: a neon crown sign over black double doors with a red carpet, and a restroom door on the right">
+  <button type="button" id="street-door" class="hotspot door-hotspot" aria-label="Enter The Night Shop"></button>
+  <button type="button" id="bathroom-door" class="hotspot bath-hotspot" aria-label="Open the private question door"></button>
+  <p class="tap-hint">TAP THE DOORS TO ENTER</p>
+  <div class="window-message" id="window-message" hidden>
+   <button type="button" id="close-window" aria-label="Close question panel">×</button>
+   <b>PRIVATE QUESTION</b>
+   <form id="question-form">
+    <textarea name="message" rows="3" maxlength="1000" placeholder="Ask the owner a private question…" required></textarea>
+    <button type="submit">SEND</button>
+   </form>
+   <p id="question-status" class="muted" aria-live="polite"></p>
   </div>
  </div>
- <div class="wet-street"><div class="puddle p1"></div><div class="puddle p2"></div><div class="street-reflection"></div></div>
- <div class="window-message" id="window-message" hidden><button type="button" id="close-window" aria-label="Close question panel">×</button><b>PRIVATE QUESTION</b><p>Sign in to send the owner a private message.</p></div>
 </section>
 <section id="login-door">
-  <button type="button" id="back-to-street" class="back-link">← BACK TO STREET</button>
   <h2>THE ENTRANCE</h2><p class="muted">Enter your member credentials.</p>
   <form id="login-form">
    <input name="username" type="text" placeholder="Username" autocomplete="username" required>
@@ -266,13 +146,7 @@ body.login-screen #login-door{display:block!important;width:min(100%,440px);max-
   </form>
   <p id="strike-note">Strikes: 0 / 3</p><p id="status-note">Awaiting credentials...</p>
  </section>
- <section id="shop-app">
-  <div class="shop-panel"><div class="row"><div><h2 id="member-greeting">WELCOME INSIDE</h2><p class="muted" id="shop-state">Checking shop status…</p></div><button id="sign-out-button" type="button">SIGN OUT</button></div></div>
-  <section class="shop-panel"><h2>THE COLLECTION</h2><div id="product-list" class="product-grid"></div></section>
-  <section class="shop-panel"><h2>YOUR ORDERS</h2><div id="order-history" class="muted">No orders loaded.</div></section>
-  <section class="shop-panel"><h2>PRIVATE MESSAGE</h2><form id="message-form"><textarea name="message" rows="3" maxlength="1000" placeholder="Leave a private message…" required></textarea><button type="submit">SEND MESSAGE</button></form><div id="message-status" class="muted"></div><div id="message-history"></div></section>
-  <section class="shop-panel hidden" id="owner-tools"><h2>OWNER CONTROLS</h2><button id="toggle-shop-button" type="button">TOGGLE SHOP STATUS</button><div id="owner-orders"></div></section>
- </section>
+ <section id="shop-app"></section>
 </main>
 <footer>THE NIGHT SHOP · PRIVATE ESTABLISHMENT</footer>
 <script>
@@ -280,17 +154,13 @@ body.login-screen #login-door{display:block!important;width:min(100%,440px);max-
 const streetScene = document.querySelector("#street-scene");
 const loginDoor = document.querySelector("#login-door");
 document.querySelector("#street-door")?.addEventListener("click", () => {
-  document.querySelector("#street-door")?.classList.add("door-opening");
-  document.body.classList.add("login-screen");
+  const door = document.querySelector("#street-door");
+  door?.classList.add("door-opening");
   if (loginDoor) {
     loginDoor.style.display = "block";
-    window.setTimeout(() => loginDoor.querySelector('input[name="username"]')?.focus({preventScroll:true}), 150);
+    loginDoor.scrollIntoView({behavior:"smooth",block:"center"});
+    window.setTimeout(() => loginDoor.querySelector('input[name="username"]')?.focus({preventScroll:true}), 350);
   }
-});
-document.querySelector("#back-to-street")?.addEventListener("click", () => {
-  document.body.classList.remove("login-screen");
-  if (loginDoor) loginDoor.style.display = "none";
-  document.querySelector("#street-door")?.classList.remove("door-opening");
 });
 const windowMessage = document.querySelector("#window-message");
 document.querySelector("#bathroom-door")?.addEventListener("click", () => {

@@ -27,7 +27,6 @@ form?.addEventListener("submit", async (event) => {
       headers: {
         "Content-Type": "application/json",
         "apikey": "sb_publishable_J_prDGvoCdlL3QI1SoYebg_OCnjqNQZ",
-        "Authorization": "Bearer sb_publishable_J_prDGvoCdlL3QI1SoYebg_OCnjqNQZ"
       },
       body: JSON.stringify({
         username: form.elements.username.value.trim(),

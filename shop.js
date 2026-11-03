@@ -22,6 +22,15 @@ const choices = [
 
 root.innerHTML = `
   <section class="shop-panel"><div class="row"><div><p class="muted">MEMBER LOUNGE</p><h2>Welcome in, ${safe(profile.display_name || "member")}</h2><p id="shop-state">Checking shop status…</p></div><button id="sign-out" type="button">Sign out</button></div></section>
+  
+  <section id="lounge-scene" aria-label="The Night Shop private lounge">
+    <div class="lounge-ceiling"></div><h2 class="lounge-title">WELCOME TO THE PRIVATE LOUNGE</h2>
+    <div class="lounge-hologram"><b>❄️</b><span>HONEYDRIPPERS</span></div>
+    <div class="lounge-hologram h2"><b>🌴</b><span>HERBAL TEAS</span></div>
+    <div class="lounge-hologram h3"><b>⚕️</b><span>HERBAL SHOTS</span></div>
+    <div class="lounge-bar"></div><div class="lounge-sofa"></div><div class="lounge-pool"></div><div class="lounge-floor"></div>
+    <div class="lounge-controls"><button type="button" id="lounge-lights">DIM THE LIGHTS</button><button type="button" id="lounge-view">CHANGE VIEW</button></div>
+  </section>
   <section class="shop-panel"><h2>THE COLLECTION</h2><div id="catalog" class="product-grid"></div></section>
   <section class="shop-panel" id="order-panel" hidden><h3 id="order-title">Your order</h3><p id="order-detail"></p><div id="order-options"></div><button id="place-order">Submit order</button><p id="order-note" aria-live="polite"></p></section>
   <section class="shop-panel"><h2>YOUR ORDERS</h2><div id="order-history">Loading…</div></section>
@@ -116,3 +125,14 @@ if (profile.is_owner) {
   await loadOwnerOrders();
 }
 await Promise.all([refreshStatus(), loadOrders(), loadMessages()]);
+// Lounge ambience controls
+const loungeScene = root.querySelector("#lounge-scene");
+root.querySelector("#lounge-lights")?.addEventListener("click", event => {
+  loungeScene?.classList.toggle("lights-low");
+  event.currentTarget.textContent = loungeScene?.classList.contains("lights-low") ? "RESTORE LIGHTS" : "DIM THE LIGHTS";
+});
+root.querySelector("#lounge-view")?.addEventListener("click", () => {
+  loungeScene?.classList.toggle("alternate-view");
+  if (loungeScene) loungeScene.style.backgroundPosition = loungeScene.classList.contains("alternate-view") ? "right center" : "center";
+  loungeScene?.scrollIntoView({behavior:"smooth",block:"center"});
+});

@@ -219,10 +219,12 @@ footer{color:#777f91}
 const streetScene = document.querySelector("#street-scene");
 const loginDoor = document.querySelector("#login-door");
 document.querySelector("#street-door")?.addEventListener("click", () => {
+  const door = document.querySelector("#street-door");
+  door?.classList.add("door-opening");
   if (loginDoor) {
     loginDoor.style.display = "block";
     loginDoor.scrollIntoView({behavior:"smooth",block:"center"});
-    loginDoor.querySelector('input[name="username"]')?.focus({preventScroll:true});
+    window.setTimeout(() => loginDoor.querySelector('input[name="username"]')?.focus({preventScroll:true}), 350);
   }
 });
 const windowMessage = document.querySelector("#window-message");
@@ -233,6 +235,6 @@ document.querySelector("#close-window")?.addEventListener("click", () => {
   if (windowMessage) windowMessage.hidden = true;
 });
 </script>
-<script type="module" src="./login.js?v=nightshop-20261103-9"></script>
+<script type="module" src="./login.js?v=nightshop-20261103-10"></script>
 </body>
 </html>

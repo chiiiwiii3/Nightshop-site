@@ -22,6 +22,7 @@ const choices = [
 
 root.innerHTML = `
   <section class="shop-panel"><div class="row"><div><p class="muted">MEMBER LOUNGE</p><h2>Welcome in, ${safe(profile.display_name || "member")}</h2><p id="shop-state">Checking shop status…</p></div><button id="sign-out" type="button">Sign out</button></div></section>
+  ${profile.is_owner ? '<section class="shop-panel" id="exterior-artwork-tools"><h2>EXTERIOR ARTWORK</h2><p class="muted">Upload the approved storefront picture from your phone Gallery. JPG, PNG, or WebP · up to 15 MB.</p><input id="exterior-upload" type="file" accept="image/jpeg,image/png,image/webp"><p id="exterior-upload-status" aria-live="polite"></p></section>' : ""}
   
   <section id="lounge-scene" aria-label="The Night Shop private lounge">
     <div class="lounge-ceiling"></div><h2 class="lounge-title">WELCOME TO THE PRIVATE LOUNGE</h2>
@@ -35,7 +36,7 @@ root.innerHTML = `
   <section class="shop-panel" id="order-panel" hidden><h3 id="order-title">Your order</h3><p id="order-detail"></p><div id="order-options"></div><button id="place-order">Submit order</button><p id="order-note" aria-live="polite"></p></section>
   <section class="shop-panel"><h2>YOUR ORDERS</h2><div id="order-history">Loading…</div></section>
   <section class="shop-panel"><h2>PRIVATE MESSAGE</h2><textarea id="member-message" rows="3" maxlength="1000" placeholder="Send the owner a private message"></textarea><button id="send-message">Send message</button><p id="message-note" aria-live="polite"></p><div id="message-history"></div></section>
-  ${profile.is_owner ? '<section class="shop-panel"><h2>OWNER CONTROLS</h2><button id="toggle-shop">Toggle shop open / closed</button><div class="shop-panel"><h3>EXTERIOR ARTWORK</h3><p class="muted">Choose the approved storefront picture from your phone Gallery. JPG, PNG, or WebP · up to 15 MB.</p><input id="exterior-upload" type="file" accept="image/jpeg,image/png,image/webp"><p id="exterior-upload-status" aria-live="polite"></p></div><div id="owner-orders"></div></section>' : ""}
+  ${profile.is_owner ? '<section class="shop-panel"><h2>OWNER CONTROLS</h2><button id="toggle-shop">Toggle shop open / closed</button><div id="owner-orders"></div></section>' : ""}
 `;
 
 // Load the currently published exterior artwork for every visitor.

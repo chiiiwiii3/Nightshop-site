@@ -70,25 +70,13 @@ root.innerHTML = `
       <div class="lounge-world" id="lounge-world">
         <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: a leather couch, pool table, graffiti wall and a bar with glowing holograms" draggable="false">
         ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
+        <button type="button" class="spot-sign" id="bath-sign" aria-label="Open the bathroom window" style="left:4.6%;top:72.5%;width:9%;height:15%"><span class="spot-ring"></span><span class="sign-icons" aria-hidden="true">♂ ♀</span><span class="sign-label" aria-hidden="true">RESTROOM</span></button>
       </div>
     </div>
     <button class="look look-left" id="look-left" type="button" aria-label="Look left">‹</button>
     <button class="look look-right" id="look-right" type="button" aria-label="Look right">›</button>
     <p class="lounge-hint">DRAG TO LOOK AROUND · TAP A HOLOGRAM TO ORDER</p>
     <div class="closed-veil" id="closed-veil" hidden><b>SHOP IS CLOSED</b><span>The lights are red. Check back when they turn blue.</span></div>
-  </section>
-
-  <nav class="menu-chips" aria-label="Menu">
-    ${ITEMS.map(item => `<button type="button" class="menu-chip chip-${item.color}" data-product="${item.id}">${item.icon}<span>${item.name}</span></button>`).join("")}
-  </nav>
-
-  <section class="panel bath" id="bath-panel">
-    <h2>BATHROOM WINDOW</h2>
-    <p class="muted small">Someone is listening behind the glass. Type a message and wait for the reply.</p>
-    <div class="bath-art" aria-hidden="true"></div>
-    <form id="message-form" class="msg-bar"><input id="member-message" name="message" maxlength="1000" placeholder="Tap to message…" autocomplete="off" required><button type="submit" aria-label="Send message">➤</button></form>
-    <p id="message-note" aria-live="polite" class="small"></p>
-    <div id="message-history" class="stack"></div>
   </section>
 
   <section class="panel">
@@ -108,6 +96,17 @@ root.innerHTML = `
       <p class="order-total">TOTAL <b id="order-total">$0.00</b></p>
       <button type="button" id="place-order" class="order-go">ORDER NOW</button>
       <p id="order-note" aria-live="polite" class="small"></p>
+    </div>
+  </div>
+  <div class="sheet" id="bath-sheet" hidden>
+    <div class="sheet-card" style="--c:#ffd98a" role="dialog" aria-modal="true" aria-labelledby="bath-title">
+      <button type="button" class="sheet-close" id="bath-close" aria-label="Close">×</button>
+      <h2 id="bath-title">BATHROOM WINDOW</h2>
+      <p class="muted small">Someone is listening behind the glass. Type a message and wait for the reply.</p>
+      <div class="bath-art" aria-hidden="true"></div>
+      <form id="message-form" class="msg-bar"><input id="member-message" name="message" maxlength="1000" placeholder="Tap to message…" autocomplete="off" required><button type="submit" aria-label="Send message">➤</button></form>
+      <p id="message-note" aria-live="polite" class="small"></p>
+      <div id="message-history" class="stack"></div>
     </div>
   </div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
@@ -135,6 +134,7 @@ function layout() {
   viewport.style.height = height + "px";
   world.style.width = width + "px";
   world.style.height = height + "px";
+  world.style.setProperty("--wu", (width / 100) + "px");     // 1% of the picture's width, so the sign scales with the scene
   maxPan = Math.max(0, width - vw);
   setPan(laidOut ? ratioPan * maxPan : 0.85 * maxPan);
   laidOut = true;
@@ -235,6 +235,14 @@ root.addEventListener("click", event => {
     if (item) openOrder(item);
   }
 });
+/* the restroom sign opens the bathroom window */
+const bathSheet = $("#bath-sheet");
+const closeBath = () => { bathSheet.hidden = true; };
+$("#bath-sign").addEventListener("click", () => { if (dragged) return; bathSheet.hidden = false; });
+$("#bath-close").addEventListener("click", closeBath);
+bathSheet.addEventListener("click", event => { if (event.target.id === "bath-sheet") closeBath(); });
+document.addEventListener("keydown", event => { if (event.key === "Escape") { closeBath(); closeOrder(); } });
+
 $("#order-close").addEventListener("click", closeOrder);
 $("#order-sheet").addEventListener("click", event => { if (event.target.id === "order-sheet") closeOrder(); });
 $("#order-options").addEventListener("click", event => {

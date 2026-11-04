@@ -44,15 +44,12 @@ body.theme-closed .lounge-art{filter:sepia(1) saturate(4) hue-rotate(-38deg) bri
 .closed-veil b{font-size:clamp(24px,6vw,44px);color:#ff5878;text-shadow:0 0 12px #ff365f,0 0 30px #ff365f}
 .closed-veil span{font-size:13px;letter-spacing:1px;color:#ffd0da;text-shadow:0 0 8px #000}
 
-/* quick menu under the scene */
-.menu-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
-.nsx .menu-chip{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px;font-size:11px;letter-spacing:1px;font-weight:700;background:rgba(5,8,18,.8);box-shadow:none;font-family:inherit}
-.menu-chip{font-size:22px}
-.menu-chip span{font-size:10px}
-.chip-blue{border:1px solid #3ec6ff;color:#bfeaff;box-shadow:0 0 14px #3ec6ff55}
-.chip-green{border:1px solid #38ff7a;color:#c4ffd9;box-shadow:0 0 14px #38ff7a55}
-.chip-purple{border:1px solid #b36bff;color:#e6d0ff;box-shadow:0 0 14px #b36bff55}
-.nsx .menu-chip:disabled{opacity:.4;filter:grayscale(.6);box-shadow:none}
+/* the restroom sign (sits where the blurred circle was, bottom-left of the lounge picture) */
+.nsx .spot-sign{--sc:#ffd98a;position:absolute;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4%;padding:0;margin:0;border-radius:10%;border:2px solid #d7bd82;background:linear-gradient(145deg,#0b0f1a,#1a1e2b);box-shadow:0 0 0 2px #070a11,0 0 18px #ffd98a99,inset 0 0 14px #000;text-transform:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.nsx .spot-sign:hover{filter:brightness(1.18);box-shadow:0 0 0 2px #070a11,0 0 26px #ffd98a,inset 0 0 14px #000}
+.spot-sign .spot-ring{inset:-8%;border-radius:14%}
+.sign-icons{font:700 calc(var(--wu,6px) * 2.1) Arial,sans-serif;line-height:1;letter-spacing:.08em;white-space:nowrap;color:#ffd98a;text-shadow:0 0 8px #ffd98a,0 0 18px #ffb84d}
+.sign-label{font:700 calc(var(--wu,6px) * .78) Arial,sans-serif;letter-spacing:.22em;white-space:nowrap;color:#e8d6a8}
 
 /* panels */
 .nsx .panel{margin:16px 0;padding:18px;border-radius:10px;background:linear-gradient(145deg,rgba(14,18,34,.93),rgba(6,8,16,.96));border:1px solid rgba(var(--accent-rgb),.42);box-shadow:0 10px 30px #000a,inset 0 0 26px rgba(var(--accent-rgb),.06)}
@@ -114,5 +111,6 @@ body.theme-closed .nsx .lights-btn{background:linear-gradient(100deg,#55101f,#d4
 
 #shop-app:before{display:none}
 @media(max-width:560px){.spot-tag{display:none}.lounge-hint{font-size:9px;letter-spacing:1px}}
-@media(min-width:760px){.menu-chips{max-width:640px;margin-inline:auto}.sheet{align-items:center}.sheet-card{border-radius:18px;border-bottom:1px solid var(--c)}}
+@media(min-width:760px){.sheet{align-items:center}.sheet-card{border-radius:18px;border-bottom:1px solid var(--c)}}
 @media(prefers-reduced-motion:reduce){.spot-ring,.toast{animation:none}}
+.sheet-card .row-card{text-align:left}

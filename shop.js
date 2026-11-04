@@ -98,6 +98,25 @@ root.innerHTML = `
       <p id="order-note" aria-live="polite" class="small"></p>
     </div>
   </div>
+  <div class="sheet" id="fulfil-sheet" hidden>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="fulfil-title">
+      <button type="button" class="sheet-close" id="fulfil-close" aria-label="Close">×</button>
+      <h2 id="fulfil-title">ORDER SENT ✅</h2>
+      <p id="fulfil-sum" class="muted"></p>
+      <div id="fulfil-choices">
+        <label>How do you want to get it?</label>
+        <div class="fulfil-choices"><button type="button" data-fulfil="delivery">🚚<br>DELIVERY</button><button type="button" data-fulfil="meetup">🤝<br>MEET UP</button></div>
+        <button type="button" class="ghost" id="fulfil-later">Decide later</button>
+      </div>
+      <form id="delivery-form" hidden>
+        <label for="delivery-text">Address and any info</label>
+        <textarea id="delivery-text" rows="4" maxlength="700" placeholder="Street, apt / unit, gate code, name to ask for, best time…" required></textarea>
+        <button type="submit" class="order-go">SEND WITH ORDER</button>
+        <button type="button" class="ghost" id="delivery-back">Back</button>
+      </form>
+      <p id="fulfil-note" aria-live="polite" class="small"></p>
+    </div>
+  </div>
   <div class="sheet" id="bath-sheet" hidden>
     <div class="sheet-card" style="--c:#ffd98a" role="dialog" aria-modal="true" aria-labelledby="bath-title">
       <button type="button" class="sheet-close" id="bath-close" aria-label="Close">×</button>
@@ -128,7 +147,7 @@ function setPan(value, animate = false) {
 function layout() {
   const vw = viewport.clientWidth;
   if (!vw) return;                                          // shop not on screen yet; the observer below calls us again
-  const ratioPan = maxPan ? pan / maxPan : 0.85;           // start looking at the bar and holograms
+  const ratioPan = maxPan ? pan / maxPan : 1;              // start looking at the bar and holograms
   const height = Math.max(Math.min(Math.max(vw / RATIO, 320), Math.round(window.innerHeight * 0.62), 560), vw / RATIO);
   const width = height * RATIO;
   viewport.style.height = height + "px";
@@ -136,7 +155,7 @@ function layout() {
   world.style.height = height + "px";
   world.style.setProperty("--wu", (width / 100) + "px");     // 1% of the picture's width, so the sign scales with the scene
   maxPan = Math.max(0, width - vw);
-  setPan(laidOut ? ratioPan * maxPan : 0.85 * maxPan);
+  setPan(laidOut ? ratioPan * maxPan : maxPan);
   laidOut = true;
 }
 layout();
@@ -241,7 +260,7 @@ const closeBath = () => { bathSheet.hidden = true; };
 $("#bath-sign").addEventListener("click", () => { if (dragged) return; bathSheet.hidden = false; });
 $("#bath-close").addEventListener("click", closeBath);
 bathSheet.addEventListener("click", event => { if (event.target.id === "bath-sheet") closeBath(); });
-document.addEventListener("keydown", event => { if (event.key === "Escape") { closeBath(); closeOrder(); } });
+document.addEventListener("keydown", event => { if (event.key === "Escape") { closeBath(); closeOrder(); closeFulfil(); } });
 
 $("#order-close").addEventListener("click", closeOrder);
 $("#order-sheet").addEventListener("click", event => { if (event.target.id === "order-sheet") closeOrder(); });
@@ -256,31 +275,101 @@ $("#order-options").addEventListener("click", event => {
   if (act === "qty+") opt.qty = Math.min(99, opt.qty + 1);
   renderOptions();
 });
+/* Delivery / meet-up details travel as a private message tagged with the order id, e.g. "... [order:123]". */
+const FULFIL_TAG = /\s*\[order:([\w-]+)\]\s*$/;
+function parseFulfil(m) {
+  const text = String(m?.message ?? "");
+  const hit = FULFIL_TAG.exec(text);
+  if (!hit) return null;
+  const [head, ...rest] = text.replace(FULFIL_TAG, "").split("\n");
+  return { orderId: hit[1], kind: head.startsWith("📦") ? "delivery" : "meetup", head, details: rest.join("\n").trim() };
+}
+const kindLabel = kind => kind === "delivery" ? "📦 Delivery" : "🤝 Meet up";
+const linkFor = (orderId, messages, customerId) =>
+  messages.find(m => (!customerId || m.customer_id === customerId) && parseFulfil(m)?.orderId === String(orderId));
+
 $("#place-order").addEventListener("click", async () => {
   const note = $("#order-note");
   if (!shopOpen || !selected) { note.textContent = "The shop is closed."; return; }
   const order = computeOrder();
   if (selected.kind === "amount" && (!Number.isFinite(order.total) || order.total < 20 || order.total > 10000 || order.total % 5 !== 0)) { note.textContent = "Choose $20 or more in $5 steps."; return; }
   if (selected.kind === "shot" && (!Number.isInteger(order.quantity) || order.quantity < 1 || order.quantity > 99)) { note.textContent = "Choose 1–99 shots."; return; }
+  const color = COLORS[selected.color];
   const go = $("#place-order"); go.disabled = true; note.textContent = "Sending…";
   const { error } = await supabase.from("orders").insert({ customer_id: user.id, item: order.item, quantity: order.quantity, total_amount: order.total });
   go.disabled = false;
   if (error) { console.error(error); note.textContent = "Could not send the order. Please try again."; return; }
-  toast("Order sent. You'll get a reply here as soon as the owner answers.");
   closeOrder();
   await loadOrders();
+  const placed = myOrders[0];                                   // newest first
+  if (placed) openFulfil(placed, color);                        // next step: delivery or meet up
+  else toast("Order sent. You'll get a reply here as soon as the owner answers.");
+});
+
+/* ---------- after ordering: delivery or meet up ---------- */
+let fulfilOrder = null;
+const fulfilSheet = $("#fulfil-sheet");
+function openFulfil(order, color) {
+  fulfilOrder = order;
+  fulfilSheet.style.setProperty("--c", color || "var(--accent)");
+  $("#fulfil-sum").textContent = order.item + " × " + order.quantity + " · " + money(order.total_amount);
+  $("#fulfil-choices").hidden = false;
+  $("#delivery-form").hidden = true;
+  $("#delivery-text").value = "";
+  $("#fulfil-note").textContent = "";
+  fulfilSheet.hidden = false;
+}
+function closeFulfil() { fulfilSheet.hidden = true; fulfilOrder = null; }
+async function sendFulfil(kind, details) {
+  const o = fulfilOrder; if (!o) return;
+  const note = $("#fulfil-note"); note.textContent = "Sending…";
+  const head = (kind === "delivery" ? "📦 DELIVERY" : "🤝 MEET UP") + " · " + o.item + " × " + o.quantity + " · " + money(o.total_amount);
+  const message = head + (details ? "\n" + details : "") + " [order:" + o.id + "]";
+  const { error } = await supabase.from("messages").insert({ customer_id: user.id, message });
+  if (error) { console.error(error); note.textContent = "Could not send. Please try again."; return; }
+  toast(kind === "delivery" ? "Delivery details sent with your order." : "Meet up requested. The owner has been notified.");
+  closeFulfil();
+  await Promise.all([loadMessages(), loadOrders()]);
+}
+$("#fulfil-choices").addEventListener("click", event => {
+  const button = event.target.closest("[data-fulfil]"); if (!button) return;
+  if (button.dataset.fulfil === "delivery") { $("#fulfil-choices").hidden = true; $("#delivery-form").hidden = false; $("#delivery-text").focus(); }
+  else sendFulfil("meetup", "");
+});
+$("#delivery-form").addEventListener("submit", event => {
+  event.preventDefault();
+  const text = $("#delivery-text").value.trim();
+  if (text) sendFulfil("delivery", text);
+});
+$("#delivery-back").addEventListener("click", () => { $("#delivery-form").hidden = true; $("#fulfil-choices").hidden = false; });
+$("#fulfil-close").addEventListener("click", closeFulfil);
+$("#fulfil-later").addEventListener("click", closeFulfil);
+fulfilSheet.addEventListener("click", event => { if (event.target.id === "fulfil-sheet") closeFulfil(); });
+$("#order-history").addEventListener("click", event => {
+  const button = event.target.closest("[data-fulfil-order]"); if (!button) return;
+  const order = myOrders.find(o => String(o.id) === button.dataset.fulfilOrder);
+  if (order) openFulfil(order);
 });
 
 /* ---------- member: order history + replies ---------- */
 const seenOrders = new Map();
-let ordersLoaded = false;
+let ordersLoaded = false, myOrders = [], myMessages = [];
+function renderMyOrders() {
+  $("#order-history").innerHTML = myOrders.map(o => {
+    const link = linkFor(o.id, myMessages), f = link && parseFulfil(link);
+    const fulfil = f
+      ? `<div class="fulfil-box"><span class="fulfil-tag">${kindLabel(f.kind)}</span>${f.details ? `<div class="fulfil-text">${safe(f.details)}</div>` : ""}${link.reply ? `<div class="reply">🕴️ ${safe(link.reply)}</div>` : ""}</div>`
+      : (cls(o.status) === "denied" ? "" : `<button type="button" class="ghost choose-fulfil" data-fulfil-order="${safe(o.id)}">🚚 Delivery or 🤝 meet up?</button>`);
+    return `<div class="row-card"><div><b>${safe(o.item)}</b><small>${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div><span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span>${fulfil}</div>`;
+  }).join("") || "No orders yet.";
+}
 async function loadOrders() {
   const { data, error } = await supabase.from("orders").select("id,item,quantity,total_amount,status,created_at")
     .eq("customer_id", user.id).order("created_at", { ascending: false }).limit(10);
-  const box = $("#order-history");
-  if (error) { box.textContent = "Could not load orders."; return; }
-  box.innerHTML = (data || []).map(o => `<div class="row-card"><div><b>${safe(o.item)}</b><small>${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div><span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span></div>`).join("") || "No orders yet.";
-  (data || []).forEach(o => {
+  if (error) { $("#order-history").textContent = "Could not load orders."; return; }
+  myOrders = data || [];
+  renderMyOrders();
+  myOrders.forEach(o => {
     if (ordersLoaded && seenOrders.has(o.id) && seenOrders.get(o.id) !== o.status && cls(o.status) !== "pending") {
       toast("The Night Shop: your order — " + String(STATUS_LABEL[cls(o.status)] || o.status), "alert");
     }
@@ -292,16 +381,19 @@ async function loadOrders() {
 const seenReplies = new Map();
 let messagesLoaded = false;
 async function loadMessages() {
-  const { data, error } = await supabase.from("messages").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(10);
+  const { data, error } = await supabase.from("messages").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(30);
   const box = $("#message-history");
   if (error) { box.textContent = "Could not load messages."; return; }
-  box.innerHTML = (data || []).map(m => `<div class="row-card msg"><div><b>You</b><small>${safe(m.message)}</small>${m.reply ? `<div class="reply">🕴️ ${safe(m.reply)}</div>` : ""}</div></div>`).join("");
-  (data || []).forEach(m => {
-    const key = m.id ?? m.created_at;
-    if (messagesLoaded && m.reply && !seenReplies.get(key)) toast("The shadow replied to your message.", "alert");
+  myMessages = data || [];
+  // delivery / meet-up messages are shown on their order card, not in the bathroom window
+  box.innerHTML = myMessages.filter(m => !parseFulfil(m)).slice(0, 10).map(m => `<div class="row-card msg"><div><b>You</b><small>${safe(m.message)}</small>${m.reply ? `<div class="reply">🕴️ ${safe(m.reply)}</div>` : ""}</div></div>`).join("");
+  myMessages.forEach(m => {
+    const key = m.id ?? m.created_at, f = parseFulfil(m);
+    if (messagesLoaded && m.reply && !seenReplies.get(key)) toast(f ? "The owner replied about your " + (f.kind === "delivery" ? "delivery." : "meet up.") : "The shadow replied to your message.", "alert");
     seenReplies.set(key, m.reply || "");
   });
   messagesLoaded = true;
+  renderMyOrders();
 }
 $("#message-form").addEventListener("submit", async event => {
   event.preventDefault();
@@ -337,15 +429,27 @@ if (isOwner) {
   });
 
   const knownPending = new Set();
-  let ownerOrdersLoaded = false;
+  let ownerOrdersLoaded = false, ownerOrders = [], ownerMsgs = [];
+  const ownerNames = new Map();
+  const learnNames = async ids => { (await names(ids)).forEach((value, key) => ownerNames.set(key, value)); };
+
+  function renderOwnerOrders() {
+    const sorted = [...ownerOrders].sort((a, b) => (cls(b.status) === "pending") - (cls(a.status) === "pending"));
+    $("#owner-orders").innerHTML = sorted.map(o => {
+      const link = linkFor(o.id, ownerMsgs, o.customer_id), f = link && parseFulfil(link);
+      const fulfil = f
+        ? `<div class="fulfil-box"><span class="fulfil-tag">${kindLabel(f.kind)}</span><div class="fulfil-text">${f.details ? safe(f.details) : '<span class="muted">No extra details. Reply to set the time and place.</span>'}</div>${link.reply ? `<div class="reply">You: ${safe(link.reply)}</div>` : ""}<form class="msg-bar small-bar" data-msg="${safe(link.id ?? "")}"><input name="reply" maxlength="700" placeholder="${f.kind === "meetup" ? "Reply: where and when…" : "Reply about the delivery…"}" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></form></div>`
+        : '<small class="pending-note">Delivery / meet up: not chosen yet</small>';
+      return `<div class="row-card order-card ${cls(o.status) === "pending" ? "is-new" : ""}"><div><b>${safe(o.item)}</b><small>${safe(ownerNames.get(o.customer_id) || "Member")} · ${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div><span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span><div class="decide"><button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied">Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button></div>${fulfil}</div>`;
+    }).join("") || "No orders yet.";
+  }
   loadOwnerOrders = async () => {
     const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at").order("created_at", { ascending: false }).limit(30);
-    const box = $("#owner-orders");
-    if (error) { box.textContent = "Could not load orders."; return; }
-    const who = await names((data || []).map(o => o.customer_id));
-    const sorted = [...(data || [])].sort((a, b) => (cls(b.status) === "pending") - (cls(a.status) === "pending"));
-    box.innerHTML = sorted.map(o => `<div class="row-card order-card ${cls(o.status) === "pending" ? "is-new" : ""}"><div><b>${safe(o.item)}</b><small>${safe(who.get(o.customer_id) || "Member")} · ${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div><span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span><div class="decide"><button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied">Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button></div></div>`).join("") || "No orders yet.";
-    (data || []).forEach(o => {
+    if (error) { $("#owner-orders").textContent = "Could not load orders."; return; }
+    ownerOrders = data || [];
+    await learnNames(ownerOrders.map(o => o.customer_id));
+    renderOwnerOrders();
+    ownerOrders.forEach(o => {
       if (cls(o.status) === "pending" && !knownPending.has(o.id)) {
         if (ownerOrdersLoaded) toast("New order: " + o.item + " · " + money(o.total_amount), "alert");
         knownPending.add(o.id);
@@ -364,21 +468,28 @@ if (isOwner) {
   const knownMessages = new Set();
   let ownerMessagesLoaded = false;
   loadOwnerMessages = async () => {
-    const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(30);
+    const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(60);
     const box = $("#owner-messages");
     if (error) { box.textContent = "Could not load messages."; return; }
-    const who = await names((data || []).map(m => m.customer_id));
-    box.innerHTML = (data || []).map(m => `<form class="row-card msg reply-form" data-msg="${safe(m.id ?? "")}"><div><b>${safe(who.get(m.customer_id) || "Member")}</b><small>${safe(m.message)} · ${when(m.created_at)}</small>${m.reply ? `<div class="reply">You: ${safe(m.reply)}</div>` : ""}<div class="msg-bar small-bar"><input name="reply" maxlength="1000" placeholder="${m.reply ? "Send another reply…" : "Reply as the shadow…"}" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></div></div></form>`).join("") || "No messages yet.";
-    (data || []).forEach(m => {
+    ownerMsgs = data || [];
+    await learnNames(ownerMsgs.map(m => m.customer_id));
+    // delivery / meet-up messages appear on their order card; show them here only if no matching order is loaded
+    const plain = ownerMsgs.filter(m => { const f = parseFulfil(m); return !f || !ownerOrders.some(o => String(o.id) === f.orderId && o.customer_id === m.customer_id); }).slice(0, 30);
+    box.innerHTML = plain.map(m => `<form class="row-card msg reply-form" data-msg="${safe(m.id ?? "")}"><div><b>${safe(ownerNames.get(m.customer_id) || "Member")}</b><small>${safe(parseFulfil(m) ? String(m.message).replace(FULFIL_TAG, "") : m.message)} · ${when(m.created_at)}</small>${m.reply ? `<div class="reply">You: ${safe(m.reply)}</div>` : ""}<div class="msg-bar small-bar"><input name="reply" maxlength="1000" placeholder="${m.reply ? "Send another reply…" : "Reply as the shadow…"}" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></div></div></form>`).join("") || "No messages yet.";
+    ownerMsgs.forEach(m => {
       const key = m.id ?? m.created_at;
       if (!knownMessages.has(key)) {
-        if (ownerMessagesLoaded && !m.reply) toast("New message: " + String(m.message).slice(0, 60), "alert");
+        if (ownerMessagesLoaded && !m.reply) {
+          const f = parseFulfil(m);
+          toast(f ? kindLabel(f.kind) + " · " + (ownerNames.get(m.customer_id) || "Member") + " · " + f.head.split(" · ").slice(1).join(" · ") : "New message: " + String(m.message).slice(0, 60), "alert");
+        }
         knownMessages.add(key);
       }
     });
     ownerMessagesLoaded = true;
+    renderOwnerOrders();
   };
-  $("#owner-messages").addEventListener("submit", async event => {
+  async function sendOwnerReply(event) {
     event.preventDefault();
     const formEl = event.target.closest("[data-msg]"); if (!formEl || !formEl.dataset.msg) { toast("This message has no id, so it can't be answered.", "alert"); return; }
     const text = formEl.elements.reply.value.trim(); if (!text) return;
@@ -386,7 +497,9 @@ if (isOwner) {
     if (error) { console.error(error); toast("Could not send the reply.", "alert"); return; }
     toast("Reply sent.");
     await loadOwnerMessages();
-  });
+  }
+  $("#owner-messages").addEventListener("submit", sendOwnerReply);
+  $("#owner-orders").addEventListener("submit", sendOwnerReply);
 
   const artworkInput = $("#exterior-upload");
   const artworkStatus = $("#exterior-upload-status");

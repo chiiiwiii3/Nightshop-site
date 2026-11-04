@@ -114,3 +114,14 @@ body.theme-closed .nsx .lights-btn{background:linear-gradient(100deg,#55101f,#d4
 @media(min-width:760px){.sheet{align-items:center}.sheet-card{border-radius:18px;border-bottom:1px solid var(--c)}}
 @media(prefers-reduced-motion:reduce){.spot-ring,.toast{animation:none}}
 .sheet-card .row-card{text-align:left}
+
+/* delivery / meet up */
+.fulfil-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 14px}
+.nsx .fulfil-choices button{padding:22px 8px;font-size:15px;line-height:1.7;letter-spacing:2px;background:rgba(255,255,255,.04);border:2px solid var(--c);color:#fff;box-shadow:0 0 18px var(--c)}
+.sheet-card .ghost{width:100%;margin-top:10px}
+#fulfil-sheet textarea{min-height:110px;font-size:15px;text-align:left}
+.fulfil-box{width:100%;padding:10px 12px;border-radius:8px;border:1px dashed rgba(var(--accent-rgb),.65);background:rgba(var(--accent-rgb),.07)}
+.fulfil-tag{font:700 11px Arial,sans-serif;letter-spacing:2px;color:#ffd98a}
+.fulfil-text{margin-top:6px;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.pending-note{width:100%;color:#ffd98a}
+.nsx .choose-fulfil{width:100%;margin-top:2px;padding:11px;font-size:12px;letter-spacing:1px;border-color:#ffd98a;color:#ffd98a}

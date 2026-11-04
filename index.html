@@ -67,7 +67,7 @@ footer{color:#777f91}
 .bath-hotspot{left:81%;top:32%;width:11%;height:48%}
 .door-hotspot.door-opening{background:rgba(255,226,170,.2);transition:background .45s}
 .tap-hint{position:absolute;z-index:2;left:0;right:0;bottom:2.2%;margin:0;text-align:center;font:clamp(8px,1.5vw,11px) Arial,sans-serif;letter-spacing:3px;color:#ffd9a0;text-shadow:0 0 10px #000,0 0 16px #ff365f88;pointer-events:none}
-.window-message{position:absolute;z-index:8;right:2%;bottom:4%;width:min(320px,94%);padding:14px 16px;background:#0a1321f2;border:1px solid #4bcfff;box-shadow:0 0 28px #35bfff66;color:#e8f7ff;text-align:left;backdrop-filter:blur(12px)}
+.window-message{position:absolute;z-index:8;right:2%;bottom:4%;width:min(320px,94%);padding:14px 16px;background:linear-gradient(rgba(5,9,22,.78),rgba(5,9,22,.92)),url(./art/bathroom.jpg) center/cover;border:1px solid #4bcfff;box-shadow:0 0 28px #35bfff66;color:#e8f7ff;text-align:left;backdrop-filter:blur(12px)}
 .window-message b{color:#9be5ff;letter-spacing:2px;font:11px Arial}
 .window-message textarea{margin:8px 0;font-size:14px}
 .window-message form button{width:100%}
@@ -75,42 +75,11 @@ footer{color:#777f91}
 #question-status{font:12px Arial;min-height:16px;margin:6px 0 0}
 @media(max-width:560px){.window-message{position:static;width:100%;box-shadow:none}}
 
-/* INTERIOR LOUNGE */
-#lounge-scene{position:relative;min-height:390px;height:clamp(390px,53vw,540px);overflow:hidden;margin:0 0 20px;border:1px solid #826b4c;background:linear-gradient(180deg,#0c111d,#151a26 54%,#090d14);box-shadow:0 20px 45px #000b}
-.lounge-ceiling{position:absolute;inset:0 0 50%;background:radial-gradient(ellipse at 50% 110%,#73519a55,transparent 65%),linear-gradient(#090d17,#202331)}
-.lounge-ceiling:after{content:"";position:absolute;left:8%;right:8%;top:18%;height:2px;background:#d7bd82;box-shadow:0 0 15px #d7bd82}
-.lounge-title{position:absolute;z-index:5;top:7%;left:0;right:0;text-align:center;color:#e6d5b4;font:clamp(13px,2.2vw,20px) Georgia,serif;letter-spacing:5px;text-shadow:0 0 12px #b98c55}
-.lounge-bar{position:absolute;right:4%;top:26%;width:23%;height:39%;background:linear-gradient(90deg,#1a202a,#5b4638,#171c26);border:2px solid #9b805d;box-shadow:0 0 20px #a7794933}
-.lounge-bar:before{content:"THE BAR";position:absolute;top:12%;left:0;right:0;text-align:center;color:#d7bd82;font:10px Arial;letter-spacing:3px}
-.lounge-bar:after{content:"";position:absolute;left:10%;right:10%;bottom:16%;height:42%;background:repeating-linear-gradient(90deg,#0b1720 0 17%,#4d8290 18%,#0b1720 20%);border-bottom:3px solid #d7bd82}
-.lounge-sofa{position:absolute;left:7%;bottom:13%;width:43%;height:24%;border-radius:22px 22px 6px 6px;background:linear-gradient(#8d705d 0 16%,#483b38 18% 78%,#1c1b20 80%);box-shadow:inset 0 8px #b4977c,0 15px 18px #000}
-.lounge-sofa:before,.lounge-sofa:after{content:"";position:absolute;top:16%;bottom:12%;width:17%;background:linear-gradient(90deg,#261f20,#8b6e5a);border-radius:10px}
-.lounge-sofa:before{left:0}.lounge-sofa:after{right:0}
-.lounge-pool{position:absolute;left:38%;bottom:8%;width:29%;height:19%;background:linear-gradient(#27715c 0 10%,#0d382f 12% 78%,#4e3425 80%);border:7px solid #553b2d;box-shadow:0 10px 16px #000}
-.lounge-pool:before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px solid #8fc8a066}
-.lounge-pool:after{content:"";position:absolute;left:24%;top:35%;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:35px -10px #f4d24b,66px 10px #e65353,100px -3px #d6dbe5}
-.lounge-floor{position:absolute;bottom:0;left:0;right:0;height:18%;background:repeating-linear-gradient(90deg,#161b25 0 70px,#202632 71px 73px);border-top:2px solid #8e7657}
-.lounge-hologram{position:absolute;z-index:4;top:29%;left:8%;width:26%;padding:12px 8px;text-align:center;color:#a8edff;background:#47caff12;border:1px solid #49cfff88;box-shadow:0 0 20px #38caff33,inset 0 0 20px #38caff22;transform:perspective(250px) rotateY(8deg)}
-.lounge-hologram b{display:block;font-size:clamp(17px,3vw,27px);text-shadow:0 0 12px #4acfff}.lounge-hologram span{font:8px Arial;letter-spacing:2px}
-.lounge-hologram.h2{left:auto;right:31%;top:35%;width:17%;color:#d4b2ff;border-color:#b58aff88}
-.lounge-hologram.h3{left:auto;right:4%;top:8%;width:20%;color:#e4d09a;border-color:#d7bd8288}
-.lounge-controls{position:absolute;z-index:7;left:12px;bottom:12px;display:flex;gap:8px}
-.lounge-controls button{padding:8px 11px;font:9px Arial;letter-spacing:1px}
-#lounge-scene.lights-low{filter:brightness(.68) saturate(.8)}
-@media(max-width:560px){.lounge-bar{right:3%;width:26%}.lounge-sofa{width:48%}.lounge-pool{left:37%;width:34%}.lounge-hologram{left:3%;width:30%}.lounge-hologram.h2{right:30%;width:18%}.lounge-hologram.h3{right:2%;width:23%}}
-#lounge-scene{perspective:900px}
-.lounge-ceiling{transform:perspective(700px) rotateX(-8deg);transform-origin:top}
-.lounge-bar{transform:perspective(450px) rotateY(-7deg);box-shadow:-12px 10px 24px #0008,0 0 22px #a7794933}
-.lounge-sofa{transform:perspective(500px) rotateY(7deg);box-shadow:inset 0 8px #b4977c,0 15px 18px #000,12px 8px 0 #211d1d}
-.lounge-pool{transform:perspective(400px) rotateX(8deg);box-shadow:0 10px 16px #000,0 0 0 2px #a37c56}
-.lounge-floor{background:repeating-linear-gradient(90deg,#161b25 0 70px,#202632 71px 73px),repeating-linear-gradient(0deg,transparent 0 40px,#d7bd8210 41px)}
-.lounge-hologram{animation:holo-float 4s ease-in-out infinite}
-.lounge-hologram.h2{animation-delay:-1.3s}.lounge-hologram.h3{animation-delay:-2.5s}
-@keyframes holo-float{0%,100%{translate:0 0}50%{translate:0 -8px}}
-#lounge-scene.alternate-view .lounge-title{letter-spacing:8px;text-shadow:0 0 20px #4acfff}
-#lounge-scene.alternate-view .lounge-hologram{transform:perspective(250px) rotateY(-10deg) scale(1.06)}
-
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+<link rel="stylesheet" href="./shop.css?v=nightshop-interior-1">
 </head>
 <body>
 <header>
@@ -170,6 +139,6 @@ document.querySelector("#close-window")?.addEventListener("click", () => {
   if (windowMessage) windowMessage.hidden = true;
 });
 </script>
-<script type="module" src="./login.js?v=nightshop-exterior-upload-3"></script>
+<script type="module" src="./login.js?v=nightshop-interior-1"></script>
 </body>
 </html>

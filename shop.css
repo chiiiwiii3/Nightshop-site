@@ -125,3 +125,32 @@ body.theme-closed .nsx .lights-btn{background:linear-gradient(100deg,#55101f,#d4
 .fulfil-text{margin-top:6px;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .pending-note{width:100%;color:#ffd98a}
 .nsx .choose-fulfil{width:100%;margin-top:2px;padding:11px;font-size:12px;letter-spacing:1px;border-color:#ffd98a;color:#ffd98a}
+
+/* chat bubbles (order conversations) */
+.chat{display:flex;flex-direction:column;gap:6px;max-height:42vh;overflow-y:auto;margin:10px 0;padding:2px}
+.bubble{max-width:88%;padding:9px 12px;border-radius:14px;font-size:14px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left}
+.bubble small{display:block;margin-top:4px;font-size:10px;opacity:.65}
+.bubble b{display:block;margin-bottom:2px;font-size:11px;letter-spacing:1px;color:#ffd98a}
+.bubble.me{align-self:flex-end;background:rgba(var(--accent-rgb),.2);border:1px solid rgba(var(--accent-rgb),.55)}
+.bubble.them{align-self:flex-start;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16)}
+.bubble.sys{align-self:center;background:rgba(49,215,120,.12);border:1px solid #31d778;color:#9dffc6;font-size:13px}
+.thread-box{width:100%;padding:10px 12px;border-radius:8px;border:1px dashed rgba(var(--accent-rgb),.65);background:rgba(var(--accent-rgb),.07)}
+.row-card .reply,.row-card .open-thread{width:100%}
+.nsx .open-thread{margin-top:2px;padding:11px;font-size:12px;letter-spacing:1px}
+#thread-status-line{margin:0 0 4px}
+#thread-choose{margin:4px 0}
+.nsx .mini-del{flex:0 0 auto;width:38px;height:38px;padding:0;font-size:16px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.25);box-shadow:none}
+.status-done{color:#9dffc6;border-color:#31d778}
+.nsx .d-done{background:linear-gradient(#5b6478,#3a4152);color:#fff}
+.nsx .d-done:disabled{opacity:.35}
+.order-card.is-done{opacity:.72}
+.nsx .decide button{min-width:0}
+/* alerts you can tap */
+.toast{display:flex;flex-direction:column;gap:3px}
+.toast.tap{pointer-events:auto;cursor:pointer}
+.toast small{font-size:11px;letter-spacing:1px;color:#ffd98a}
+@keyframes flash-glow{0%,100%{box-shadow:0 0 0 rgba(255,217,138,0)}30%,70%{box-shadow:0 0 0 3px #ffd98a,0 0 26px #ffd98a}}
+.flash{animation:flash-glow 2s ease 1}
+/* four owner buttons (Confirm / Deny / Waitlist / Done) fit on a narrow phone */
+.decide{flex-wrap:wrap}
+.nsx .decide button{flex:1 1 22%;padding:11px 2px;font-size:10.5px;letter-spacing:.4px}

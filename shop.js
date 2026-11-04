@@ -23,16 +23,50 @@ const safe = value => { const el = document.createElement("span"); el.textConten
 const money = value => "$" + Number(value || 0).toFixed(2);
 const when = value => new Date(value).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const cls = value => String(value || "").replace(/[^a-z]/gi, "").toLowerCase();
-const STATUS_LABEL = { pending: "Waiting", confirmed: "Confirmed ✅", denied: "Denied", waitlisted: "Waitlist ⏳" };
+const STATUS_LABEL = { pending: "Waiting", confirmed: "Confirmed ✅", denied: "Denied", waitlisted: "Waitlist ⏳", done: "Done ✅" };
 const statusLabel = status => STATUS_LABEL[cls(status)] || safe(status);
 
-function toast(text, kind = "info") {
+/* pop-up notice; pass onClick to make it tappable (it jumps straight to the conversation) */
+function toast(text, kind = "info", onClick) {
   const el = document.createElement("div");
-  el.className = "toast " + kind;
-  el.textContent = text;
+  el.className = "toast " + kind + (onClick ? " tap" : "");
+  const label = document.createElement("span");
+  label.textContent = text;
+  el.append(label);
+  if (onClick) {
+    const hint = document.createElement("small");
+    hint.textContent = "Tap to open ›";
+    el.append(hint);
+    el.setAttribute("role", "button");
+    el.tabIndex = 0;
+    const go = () => { el.remove(); onClick(); };
+    el.addEventListener("click", go);
+    el.addEventListener("keydown", event => { if (event.key === "Enter") go(); });
+  }
   $("#toasts")?.append(el);
   try { navigator.vibrate?.(kind === "alert" ? [120, 60, 120] : 50); } catch { /* not supported */ }
-  setTimeout(() => el.remove(), 7000);
+  setTimeout(() => el.remove(), onClick ? 12000 : 7000);
+}
+function flash(el) {
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("flash");
+  setTimeout(() => el.classList.remove("flash"), 2200);
+}
+
+/* redraw a list only when it changed, and keep whatever the person is typing in it (the app refreshes every 15 seconds) */
+function patch(el, html) {
+  if (!el || el.__html === html) return;
+  const drafts = new Map(); let focusKey = null, caret = 0;
+  el.querySelectorAll("[data-draft]").forEach(field => {
+    if (field.value) drafts.set(field.dataset.draft, field.value);
+    if (document.activeElement === field) { focusKey = field.dataset.draft; caret = field.selectionStart ?? field.value.length; }
+  });
+  el.innerHTML = html; el.__html = html;
+  el.querySelectorAll("[data-draft]").forEach(field => {
+    if (drafts.has(field.dataset.draft)) field.value = drafts.get(field.dataset.draft);
+    if (field.dataset.draft === focusKey) { field.focus({ preventScroll: true }); try { field.setSelectionRange(caret, caret); } catch { /* not a text field */ } }
+  });
 }
 
 /* ---------- the menu: three floating holograms ---------- */
@@ -98,6 +132,19 @@ root.innerHTML = `
       <p id="order-note" aria-live="polite" class="small"></p>
     </div>
   </div>
+  <div class="sheet" id="thread-sheet" hidden>
+    <div class="sheet-card" style="--c:var(--accent)" role="dialog" aria-modal="true" aria-labelledby="thread-title">
+      <button type="button" class="sheet-close" id="thread-close" aria-label="Close">×</button>
+      <h2 id="thread-title">ORDER CHAT</h2>
+      <p id="thread-sum" class="muted"></p>
+      <p id="thread-status-line"></p>
+      <div id="thread-choose" hidden><button type="button" class="ghost" id="thread-choose-btn">🚚 Delivery or 🤝 meet up?</button></div>
+      <div id="thread-log" class="chat"></div>
+      <form id="thread-form" class="msg-bar"><input id="thread-input" maxlength="600" placeholder="Add directions or change your order…" autocomplete="off" required><button type="submit" aria-label="Send">➤</button></form>
+      <p id="thread-note" aria-live="polite" class="small"></p>
+      <p id="thread-closed" class="muted small" hidden>✅ This order is complete, so the chat is closed.</p>
+    </div>
+  </div>
   <div class="sheet" id="fulfil-sheet" hidden>
     <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="fulfil-title">
       <button type="button" class="sheet-close" id="fulfil-close" aria-label="Close">×</button>
@@ -125,6 +172,7 @@ root.innerHTML = `
       <div class="bath-art" aria-hidden="true"></div>
       <form id="message-form" class="msg-bar"><input id="member-message" name="message" maxlength="1000" placeholder="Tap to message…" autocomplete="off" required><button type="submit" aria-label="Send message">➤</button></form>
       <p id="message-note" aria-live="polite" class="small"></p>
+      <button type="button" class="ghost" id="clear-chat" hidden>🗑 Delete my conversation with the shadow</button>
       <div id="message-history" class="stack"></div>
     </div>
   </div>
@@ -260,7 +308,7 @@ const closeBath = () => { bathSheet.hidden = true; };
 $("#bath-sign").addEventListener("click", () => { if (dragged) return; bathSheet.hidden = false; });
 $("#bath-close").addEventListener("click", closeBath);
 bathSheet.addEventListener("click", event => { if (event.target.id === "bath-sheet") closeBath(); });
-document.addEventListener("keydown", event => { if (event.key === "Escape") { closeBath(); closeOrder(); closeFulfil(); } });
+document.addEventListener("keydown", event => { if (event.key === "Escape") { closeBath(); closeOrder(); closeFulfil(); closeThread(); } });
 
 $("#order-close").addEventListener("click", closeOrder);
 $("#order-sheet").addEventListener("click", event => { if (event.target.id === "order-sheet") closeOrder(); });
@@ -275,19 +323,40 @@ $("#order-options").addEventListener("click", event => {
   if (act === "qty+") opt.qty = Math.min(99, opt.qty + 1);
   renderOptions();
 });
-/* Delivery / meet-up details travel as a private message tagged with the order id, e.g. "... [order:123]". */
-const FULFIL_TAG = /\s*\[order:([\w-]+)\]\s*$/;
-function parseFulfil(m) {
-  const text = String(m?.message ?? "");
-  const hit = FULFIL_TAG.exec(text);
+/* ---------- order conversations ----------
+   Everything about an order (delivery / meet-up details, extra directions, changes, the owner's replies) is kept as
+   private messages tagged "[order:ID]". The chat stays open until the owner adds a "✅ DONE" line to the last reply. */
+const TAG = /\s*\[order:([\w-]+)\]\s*$/;
+const DONE = "✅ DONE";
+function parseTagged(m) {
+  const full = String(m?.message ?? "");
+  const hit = TAG.exec(full);
   if (!hit) return null;
-  const [head, ...rest] = text.replace(FULFIL_TAG, "").split("\n");
-  return { orderId: hit[1], kind: head.startsWith("📦") ? "delivery" : "meetup", head, details: rest.join("\n").trim() };
+  const text = full.replace(TAG, "");
+  const [head, ...rest] = text.split("\n");
+  const kind = head.startsWith("📦") ? "delivery" : head.startsWith("🤝") ? "meetup" : head.startsWith("🧾") ? "order" : "note";
+  const body = kind === "note" ? text.replace(/^💬\s*/, "") : rest.join("\n").trim();
+  return { orderId: hit[1], kind, head, body };
 }
-const kindLabel = kind => kind === "delivery" ? "📦 Delivery" : "🤝 Meet up";
-const linkFor = (orderId, messages, customerId) =>
-  messages.find(m => (!customerId || m.customer_id === customerId) && parseFulfil(m)?.orderId === String(orderId));
+const kindLabel = kind => kind === "delivery" ? "📦 Delivery" : kind === "meetup" ? "🤝 Meet up" : "💬 Note";
+const threadFor = (orderId, messages, customerId) => messages
+  .filter(m => (!customerId || m.customer_id === customerId) && parseTagged(m)?.orderId === String(orderId))
+  .sort((x, y) => new Date(x.created_at) - new Date(y.created_at));
+const replyLines = reply => String(reply || "").split("\n").map(line => line.trim()).filter(line => line && line !== DONE);
+const hasDone = m => String(m?.reply || "").split("\n").some(line => line.trim() === DONE);
+const isDone = (order, thread) => cls(order.status) === "done" || thread.some(hasDone);
+const myChoice = thread => thread.some(m => ["delivery", "meetup"].includes(parseTagged(m).kind));
 
+/* hide-from-view list: used only if the database does not allow customers to delete their own messages */
+const hideKey = "nsx-hidden-messages-" + user.id;
+let hiddenIds = new Set();
+try { hiddenIds = new Set(JSON.parse(localStorage.getItem(hideKey) || "[]")); } catch { /* storage blocked */ }
+const rememberHidden = ids => {
+  ids.forEach(id => hiddenIds.add(String(id)));
+  try { localStorage.setItem(hideKey, JSON.stringify([...hiddenIds])); } catch { /* storage blocked */ }
+};
+
+/* ---------- placing an order ---------- */
 $("#place-order").addEventListener("click", async () => {
   const note = $("#order-note");
   if (!shopOpen || !selected) { note.textContent = "The shop is closed."; return; }
@@ -302,8 +371,12 @@ $("#place-order").addEventListener("click", async () => {
   closeOrder();
   await loadOrders();
   const placed = myOrders[0];                                   // newest first
-  if (placed) openFulfil(placed, color);                        // next step: delivery or meet up
-  else toast("Order sent. You'll get a reply here as soon as the owner answers.");
+  if (!placed) { toast("Order sent. You'll get a reply here as soon as the owner answers."); return; }
+  // every order gets its own conversation, opened with a first line that carries the order id
+  const first = await supabase.from("messages").insert({ customer_id: user.id, message: "🧾 ORDER · " + placed.item + " × " + placed.quantity + " · " + money(placed.total_amount) + " [order:" + placed.id + "]" });
+  if (first.error) console.error(first.error);
+  await loadMessages();
+  openFulfil(placed, color);                                    // next step: delivery or meet up
 });
 
 /* ---------- after ordering: delivery or meet up ---------- */
@@ -345,10 +418,55 @@ $("#delivery-back").addEventListener("click", () => { $("#delivery-form").hidden
 $("#fulfil-close").addEventListener("click", closeFulfil);
 $("#fulfil-later").addEventListener("click", closeFulfil);
 fulfilSheet.addEventListener("click", event => { if (event.target.id === "fulfil-sheet") closeFulfil(); });
-$("#order-history").addEventListener("click", event => {
-  const button = event.target.closest("[data-fulfil-order]"); if (!button) return;
-  const order = myOrders.find(o => String(o.id) === button.dataset.fulfilOrder);
+
+/* ---------- the order chat: stays open for directions or changes until the owner marks the order done ---------- */
+let threadOrderId = null;
+const threadSheet = $("#thread-sheet");
+function openThread(orderId) { threadOrderId = String(orderId); renderThread(); threadSheet.hidden = false; const log = $("#thread-log"); log.scrollTop = log.scrollHeight; }
+function closeThread() { threadSheet.hidden = true; threadOrderId = null; }
+function renderThread() {
+  if (threadOrderId == null) return;
+  const order = myOrders.find(o => String(o.id) === threadOrderId);
+  if (!order) return;
+  const thread = threadFor(order.id, myMessages), done = isDone(order, thread);
+  $("#thread-sum").textContent = order.item + " × " + order.quantity + " · " + money(order.total_amount);
+  $("#thread-status-line").innerHTML = done ? '<span class="status status-done">Done ✅</span>' : `<span class="status status-${cls(order.status)}">${statusLabel(order.status)}</span>`;
+  $("#thread-choose").hidden = done || myChoice(thread);
+  const bubbles = [];
+  thread.forEach(m => {
+    const t = parseTagged(m);
+    if (t.kind !== "order") {
+      const mine = t.kind === "delivery" ? "📦 Delivery" + (t.body ? "\n" + t.body : "") : t.kind === "meetup" ? "🤝 Meet up requested" + (t.body ? "\n" + t.body : "") : t.body;
+      bubbles.push(`<div class="bubble me">${safe(mine)}<small>${when(m.created_at)}</small></div>`);
+    }
+    replyLines(m.reply).forEach(line => bubbles.push(`<div class="bubble them"><b>🕴️ Shadow</b>${safe(line)}</div>`));
+  });
+  if (done) bubbles.push('<div class="bubble sys">✅ Order complete</div>');
+  const log = $("#thread-log"), atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 40, keep = log.scrollTop;
+  log.innerHTML = bubbles.join("") || '<p class="muted small">No messages yet. Add directions or changes below.</p>';
+  log.scrollTop = atBottom ? log.scrollHeight : keep;
+  $("#thread-form").hidden = done;
+  $("#thread-closed").hidden = !done;
+}
+$("#thread-close").addEventListener("click", closeThread);
+threadSheet.addEventListener("click", event => { if (event.target.id === "thread-sheet") closeThread(); });
+$("#thread-choose-btn").addEventListener("click", () => {
+  const order = myOrders.find(o => String(o.id) === threadOrderId);
   if (order) openFulfil(order);
+});
+$("#thread-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const input = $("#thread-input"), note = $("#thread-note"), text = input.value.trim();
+  if (!text || threadOrderId == null) return;
+  note.textContent = "Sending…";
+  const { error } = await supabase.from("messages").insert({ customer_id: user.id, message: "💬 " + text + " [order:" + threadOrderId + "]" });
+  if (error) { console.error(error); note.textContent = "Could not send. Please try again."; return; }
+  input.value = ""; note.textContent = "";
+  await loadMessages();
+  const log = $("#thread-log"); log.scrollTop = log.scrollHeight;
+});
+$("#order-history").addEventListener("click", event => {
+  const button = event.target.closest("[data-thread]"); if (button) openThread(button.dataset.thread);
 });
 
 /* ---------- member: order history + replies ---------- */
@@ -356,11 +474,10 @@ const seenOrders = new Map();
 let ordersLoaded = false, myOrders = [], myMessages = [];
 function renderMyOrders() {
   $("#order-history").innerHTML = myOrders.map(o => {
-    const link = linkFor(o.id, myMessages), f = link && parseFulfil(link);
-    const fulfil = f
-      ? `<div class="fulfil-box"><span class="fulfil-tag">${kindLabel(f.kind)}</span>${f.details ? `<div class="fulfil-text">${safe(f.details)}</div>` : ""}${link.reply ? `<div class="reply">🕴️ ${safe(link.reply)}</div>` : ""}</div>`
-      : (cls(o.status) === "denied" ? "" : `<button type="button" class="ghost choose-fulfil" data-fulfil-order="${safe(o.id)}">🚚 Delivery or 🤝 meet up?</button>`);
-    return `<div class="row-card"><div><b>${safe(o.item)}</b><small>${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div><span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span>${fulfil}</div>`;
+    const thread = threadFor(o.id, myMessages), done = isDone(o, thread);
+    const last = [...thread].reverse().flatMap(m => replyLines(m.reply).reverse())[0];
+    const pill = done ? '<span class="status status-done">Done ✅</span>' : `<span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span>`;
+    return `<div class="row-card" data-order-card="${safe(o.id)}"><div><b>${safe(o.item)}</b><small>${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}${last ? `<div class="reply">🕴️ ${safe(last)}</div>` : ""}<button type="button" class="ghost open-thread" data-thread="${safe(o.id)}">💬 ${done ? "View conversation" : "Conversation · add directions or changes"}</button></div>`;
   }).join("") || "No orders yet.";
 }
 async function loadOrders() {
@@ -369,9 +486,10 @@ async function loadOrders() {
   if (error) { $("#order-history").textContent = "Could not load orders."; return; }
   myOrders = data || [];
   renderMyOrders();
+  renderThread();
   myOrders.forEach(o => {
     if (ordersLoaded && seenOrders.has(o.id) && seenOrders.get(o.id) !== o.status && cls(o.status) !== "pending") {
-      toast("The Night Shop: your order — " + String(STATUS_LABEL[cls(o.status)] || o.status), "alert");
+      toast("The Night Shop: your order — " + String(STATUS_LABEL[cls(o.status)] || o.status), "alert", () => openThread(o.id));
     }
     seenOrders.set(o.id, o.status);
   });
@@ -380,20 +498,31 @@ async function loadOrders() {
 
 const seenReplies = new Map();
 let messagesLoaded = false;
+function openBath(messageId) {
+  bathSheet.hidden = false;
+  if (messageId != null) setTimeout(() => flash($('#message-history [data-msg-row="' + messageId + '"]')), 150);
+}
 async function loadMessages() {
-  const { data, error } = await supabase.from("messages").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(30);
+  const { data, error } = await supabase.from("messages").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(150);
   const box = $("#message-history");
   if (error) { box.textContent = "Could not load messages."; return; }
   myMessages = data || [];
-  // delivery / meet-up messages are shown on their order card, not in the bathroom window
-  box.innerHTML = myMessages.filter(m => !parseFulfil(m)).slice(0, 10).map(m => `<div class="row-card msg"><div><b>You</b><small>${safe(m.message)}</small>${m.reply ? `<div class="reply">🕴️ ${safe(m.reply)}</div>` : ""}</div></div>`).join("");
+  // order conversations live on the order; only plain messages show in the bathroom window
+  const plain = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)));
+  box.innerHTML = plain.slice(0, 20).map(m => `<div class="row-card msg" data-msg-row="${safe(m.id)}"><div><b>You</b><small>${safe(m.message)}</small>${m.reply ? `<div class="reply">🕴️ ${safe(m.reply)}</div>` : ""}</div><button type="button" class="mini-del" data-del="${safe(m.id)}" aria-label="Delete this message">🗑</button></div>`).join("");
+  $("#clear-chat").hidden = !plain.length;
   myMessages.forEach(m => {
-    const key = m.id ?? m.created_at, f = parseFulfil(m);
-    if (messagesLoaded && m.reply && !seenReplies.get(key)) toast(f ? "The owner replied about your " + (f.kind === "delivery" ? "delivery." : "meet up.") : "The shadow replied to your message.", "alert");
-    seenReplies.set(key, m.reply || "");
+    if (hiddenIds.has(String(m.id))) return;
+    const key = m.id ?? m.created_at, t = parseTagged(m), reply = m.reply || "";
+    if (messagesLoaded && reply && seenReplies.get(key) !== reply) {
+      if (t) toast(replyLines(reply).length ? "The shadow replied about your order." : "Your order is complete ✅", "alert", () => openThread(t.orderId));
+      else toast("The shadow replied to your message.", "alert", () => openBath(m.id));
+    }
+    seenReplies.set(key, reply);
   });
   messagesLoaded = true;
   renderMyOrders();
+  renderThread();
 }
 $("#message-form").addEventListener("submit", async event => {
   event.preventDefault();
@@ -403,6 +532,27 @@ $("#message-form").addEventListener("submit", async event => {
   const { error } = await supabase.from("messages").insert({ customer_id: user.id, message });
   note.textContent = error ? "Message could not be sent." : "Message sent privately.";
   if (!error) { input.value = ""; await loadMessages(); }
+});
+
+/* delete past conversations with the shadow (plain bathroom-window messages only; order chats are order records) */
+async function deleteMessages(list) {
+  const ids = list.map(m => m.id).filter(id => id != null);
+  if (!ids.length) return;
+  let removed = 0;
+  const { data, error } = await supabase.from("messages").delete().in("id", ids).eq("customer_id", user.id).select("id");
+  if (!error) removed = (data || []).length;
+  if (removed < ids.length) rememberHidden(ids);            // database refused: at least take it out of this person's view
+  toast(removed >= ids.length ? "Deleted." : "Removed from your view.");
+  await loadMessages();
+}
+$("#message-history").addEventListener("click", event => {
+  const button = event.target.closest("[data-del]"); if (!button) return;
+  const message = myMessages.find(m => String(m.id) === button.dataset.del);
+  if (message) deleteMessages([message]);
+});
+$("#clear-chat").addEventListener("click", () => {
+  const plain = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)));
+  if (plain.length && confirm("Delete your whole conversation with the shadow? This can't be undone.")) deleteMessages(plain);
 });
 $("#sign-out").addEventListener("click", async () => { await supabase.auth.signOut(); location.reload(); });
 
@@ -433,58 +583,85 @@ if (isOwner) {
   const ownerNames = new Map();
   const learnNames = async ids => { (await names(ids)).forEach((value, key) => ownerNames.set(key, value)); };
 
+  const ownerBubbles = (thread, name) => thread.map(m => {
+    const t = parseTagged(m), out = [];
+    const theirs = t.kind === "delivery" ? "📦 Delivery" + (t.body ? "\n" + t.body : "") : t.kind === "meetup" ? "🤝 Meet up requested" + (t.body ? "\n" + t.body : "") : t.kind === "note" ? t.body : "";
+    if (theirs) out.push(`<div class="bubble them">${safe(theirs)}<small>${safe(name)} · ${when(m.created_at)}</small></div>`);
+    replyLines(m.reply).forEach(line => out.push(`<div class="bubble me"><b>You</b>${safe(line)}</div>`));
+    return out.join("");
+  }).join("");
+
   function renderOwnerOrders() {
-    const sorted = [...ownerOrders].sort((a, b) => (cls(b.status) === "pending") - (cls(a.status) === "pending"));
-    $("#owner-orders").innerHTML = sorted.map(o => {
-      const link = linkFor(o.id, ownerMsgs, o.customer_id), f = link && parseFulfil(link);
-      const fulfil = f
-        ? `<div class="fulfil-box"><span class="fulfil-tag">${kindLabel(f.kind)}</span><div class="fulfil-text">${f.details ? safe(f.details) : '<span class="muted">No extra details. Reply to set the time and place.</span>'}</div>${link.reply ? `<div class="reply">You: ${safe(link.reply)}</div>` : ""}<form class="msg-bar small-bar" data-msg="${safe(link.id ?? "")}"><input name="reply" maxlength="700" placeholder="${f.kind === "meetup" ? "Reply: where and when…" : "Reply about the delivery…"}" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></form></div>`
-        : '<small class="pending-note">Delivery / meet up: not chosen yet</small>';
-      return `<div class="row-card order-card ${cls(o.status) === "pending" ? "is-new" : ""}"><div><b>${safe(o.item)}</b><small>${safe(ownerNames.get(o.customer_id) || "Member")} · ${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div><span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span><div class="decide"><button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied">Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button></div>${fulfil}</div>`;
-    }).join("") || "No orders yet.";
+    const rows = ownerOrders.map(o => { const thread = threadFor(o.id, ownerMsgs, o.customer_id); return { o, thread, done: isDone(o, thread) }; });
+    const rank = r => r.done ? 2 : cls(r.o.status) === "pending" ? 0 : 1;
+    rows.sort((x, y) => rank(x) - rank(y));
+    patch($("#owner-orders"), rows.map(({ o, thread, done }) => {
+      const name = ownerNames.get(o.customer_id) || "Member";
+      const target = [...thread].reverse().find(m => parseTagged(m).kind !== "order") || thread[thread.length - 1];
+      const chat = thread.length
+        ? `<div class="thread-box"><span class="fulfil-tag">CONVERSATION</span><div class="chat">${ownerBubbles(thread, name)}</div>${done ? '<div class="bubble sys">✅ Done</div>' : `<form class="msg-bar small-bar" data-msg="${safe(target.id ?? "")}" data-append="1"><input data-draft="r:${safe(target.id ?? "")}" name="reply" maxlength="500" placeholder="Reply to ${safe(name)}…" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></form>`}</div>`
+        : '<small class="pending-note">No conversation yet (older order)</small>';
+      const pill = done ? '<span class="status status-done">Done ✅</span>' : `<span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span>`;
+      return `<div class="row-card order-card ${!done && cls(o.status) === "pending" ? "is-new" : ""} ${done ? "is-done" : ""}" data-order-card="${safe(o.id)}"><div><b>${safe(o.item)}</b><small>${safe(name)} · ${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}<div class="decide"><button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied">Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button><button type="button" class="d-done" data-done="${safe(o.id)}" ${done ? "disabled" : ""}>Done</button></div>${chat}</div>`;
+    }).join("") || "No orders yet.");
   }
+  const orderCard = id => $('#owner-orders [data-order-card="' + id + '"]');
+
   loadOwnerOrders = async () => {
-    const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at").order("created_at", { ascending: false }).limit(30);
+    const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at").order("created_at", { ascending: false }).limit(40);
     if (error) { $("#owner-orders").textContent = "Could not load orders."; return; }
     ownerOrders = data || [];
     await learnNames(ownerOrders.map(o => o.customer_id));
     renderOwnerOrders();
     ownerOrders.forEach(o => {
       if (cls(o.status) === "pending" && !knownPending.has(o.id)) {
-        if (ownerOrdersLoaded) toast("New order: " + o.item + " · " + money(o.total_amount), "alert");
+        if (ownerOrdersLoaded) toast("New order: " + o.item + " · " + money(o.total_amount), "alert", () => flash(orderCard(o.id)));
         knownPending.add(o.id);
       }
     });
     ownerOrdersLoaded = true;
   };
   $("#owner-orders").addEventListener("click", async event => {
+    const doneButton = event.target.closest("[data-done]");
+    if (doneButton) { await markDone(doneButton.dataset.done); return; }
     const button = event.target.closest("[data-order]"); if (!button) return;
     button.disabled = true;
     const { error } = await supabase.from("orders").update({ status: button.dataset.status }).eq("id", button.dataset.order);
     if (error) { console.error(error); toast("Could not update that order.", "alert"); } else { toast("Order marked " + button.dataset.status + "."); }
     await loadOwnerOrders();
   });
+  async function markDone(orderId) {
+    const order = ownerOrders.find(o => String(o.id) === String(orderId)); if (!order) return;
+    if (!confirm("Mark this order done? The customer's chat for it will close.")) return;
+    const thread = threadFor(order.id, ownerMsgs, order.customer_id), last = thread[thread.length - 1];
+    const result = last
+      ? await supabase.from("messages").update({ reply: (last.reply ? last.reply + "\n" : "") + DONE }).eq("id", last.id).select("id")
+      : await supabase.from("orders").update({ status: "done" }).eq("id", order.id).select("id");   // older order with no conversation
+    if (result.error || !(result.data || []).length) { console.error(result.error); toast("Could not mark it done.", "alert"); return; }
+    toast("Order marked done.");
+    await Promise.all([loadOwnerMessages(), loadOwnerOrders()]);
+  }
 
   const knownMessages = new Set();
   let ownerMessagesLoaded = false;
   loadOwnerMessages = async () => {
-    const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(60);
+    const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(200);
     const box = $("#owner-messages");
     if (error) { box.textContent = "Could not load messages."; return; }
     ownerMsgs = data || [];
     await learnNames(ownerMsgs.map(m => m.customer_id));
-    // delivery / meet-up messages appear on their order card; show them here only if no matching order is loaded
-    const plain = ownerMsgs.filter(m => { const f = parseFulfil(m); return !f || !ownerOrders.some(o => String(o.id) === f.orderId && o.customer_id === m.customer_id); }).slice(0, 30);
-    box.innerHTML = plain.map(m => `<form class="row-card msg reply-form" data-msg="${safe(m.id ?? "")}"><div><b>${safe(ownerNames.get(m.customer_id) || "Member")}</b><small>${safe(parseFulfil(m) ? String(m.message).replace(FULFIL_TAG, "") : m.message)} · ${when(m.created_at)}</small>${m.reply ? `<div class="reply">You: ${safe(m.reply)}</div>` : ""}<div class="msg-bar small-bar"><input name="reply" maxlength="1000" placeholder="${m.reply ? "Send another reply…" : "Reply as the shadow…"}" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></div></div></form>`).join("") || "No messages yet.";
+    // order conversations appear on their order card; show them here only if no matching order is loaded
+    const plain = ownerMsgs.filter(m => { const t = parseTagged(m); return !t || !ownerOrders.some(o => String(o.id) === t.orderId && o.customer_id === m.customer_id); }).slice(0, 30);
+    patch(box, plain.map(m => `<form class="row-card msg reply-form" data-msg="${safe(m.id ?? "")}"><div><b>${safe(ownerNames.get(m.customer_id) || "Member")}</b><small>${safe(m.message.replace(TAG, ""))} · ${when(m.created_at)}</small>${m.reply ? `<div class="reply">You: ${safe(m.reply)}</div>` : ""}<div class="msg-bar small-bar"><input data-draft="m:${safe(m.id ?? "")}" name="reply" maxlength="1000" placeholder="${m.reply ? "Send another reply…" : "Reply as the shadow…"}" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></div></div></form>`).join("") || "No messages yet.");
     ownerMsgs.forEach(m => {
       const key = m.id ?? m.created_at;
-      if (!knownMessages.has(key)) {
-        if (ownerMessagesLoaded && !m.reply) {
-          const f = parseFulfil(m);
-          toast(f ? kindLabel(f.kind) + " · " + (ownerNames.get(m.customer_id) || "Member") + " · " + f.head.split(" · ").slice(1).join(" · ") : "New message: " + String(m.message).slice(0, 60), "alert");
-        }
-        knownMessages.add(key);
-      }
+      if (knownMessages.has(key)) return;
+      knownMessages.add(key);
+      if (!ownerMessagesLoaded || m.reply) return;
+      const t = parseTagged(m), name = ownerNames.get(m.customer_id) || "Member";
+      if (t && t.kind === "order") return;                      // the order alert already covers this one
+      if (t) toast(name + " · " + kindLabel(t.kind) + (t.body ? ": " + t.body.slice(0, 50) : ""), "alert", () => flash(orderCard(t.orderId)));
+      else toast("New message from " + name + ": " + String(m.message).slice(0, 50), "alert", () => flash($('#owner-messages [data-msg="' + m.id + '"]')));
     });
     ownerMessagesLoaded = true;
     renderOwnerOrders();
@@ -492,9 +669,14 @@ if (isOwner) {
   async function sendOwnerReply(event) {
     event.preventDefault();
     const formEl = event.target.closest("[data-msg]"); if (!formEl || !formEl.dataset.msg) { toast("This message has no id, so it can't be answered.", "alert"); return; }
-    const text = formEl.elements.reply.value.trim(); if (!text) return;
-    const { error } = await supabase.from("messages").update({ reply: text }).eq("id", formEl.dataset.msg);
-    if (error) { console.error(error); toast("Could not send the reply.", "alert"); return; }
+    let text = formEl.elements.reply.value.trim(); if (!text) return;
+    if (formEl.dataset.append) {                                // order chat: add to earlier replies instead of replacing them
+      const current = ownerMsgs.find(m => String(m.id) === formEl.dataset.msg);
+      if (current?.reply) text = current.reply + "\n" + text;
+    }
+    const { data, error } = await supabase.from("messages").update({ reply: text }).eq("id", formEl.dataset.msg).select("id");
+    if (error || !(data || []).length) { console.error(error); toast("Could not send the reply.", "alert"); return; }
+    formEl.elements.reply.value = "";
     toast("Reply sent.");
     await loadOwnerMessages();
   }

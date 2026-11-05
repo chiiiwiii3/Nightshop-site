@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-interior-4";
+const SHOP_VERSION = "nightshop-interior-5";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
@@ -42,6 +42,27 @@ questionForm?.addEventListener("submit", async event => {
   questionForm.reset();
 });
 
+// Door lock: red lights = closed = only the owner may come in. The real check happens in shop.js
+// after login (it knows who is the owner); this just shows the sign on the door.
+function showClosedDoor(closed, message) {
+  const hint = document.querySelector("#tap-hint");
+  const lock = document.querySelector("#entry-lock");
+  if (hint) hint.textContent = closed ? "🔒 THE SHOP IS CLOSED · OWNER ONLY" : "TAP THE DOORS TO ENTER";
+  if (lock) {
+    lock.hidden = !closed;
+    lock.textContent = message || "🔒 The lights are red. The shop is closed, only the owner can come in right now.";
+  }
+}
+async function checkDoor() {
+  try {
+    const { data, error } = await supabase.from("shop_status").select("is_open").eq("id", 1).maybeSingle();
+    if (error || !data) return; // unknown: don't claim it's closed
+    showClosedDoor(data.is_open === false);
+  } catch (e) { /* ignore */ }
+}
+checkDoor();
+window.addEventListener("nightshop-entry-open", checkDoor);
+
 let shopAttempts = 0;
 async function enterShop() {
   const root = document.querySelector("#shop-app");
@@ -50,7 +71,8 @@ async function enterShop() {
   // so the person actually sees what went wrong instead of a blank page.
   const retry = shopAttempts++ ? "&retry=" + shopAttempts : "";
   await import("./shop.js?v=" + SHOP_VERSION + retry);
-  ["#login-door", "#street-scene", ".crest", "header h1", ".subtitle"]
+  document.body.classList.remove("entry-open");
+  ["#entry", "#street-scene", ".crest", "header h1", ".subtitle"]
     .forEach(selector => document.querySelector(selector)?.classList.add("hidden"));
   root.style.display = "block";
 }
@@ -94,6 +116,11 @@ form?.addEventListener("submit", async (event) => {
       note.textContent = result.error || "Sign-in failed.";
     }
   } catch (error) {
+    if (error?.locked) {
+      showClosedDoor(true, "🔒 " + error.message);
+      note.textContent = "🔒 " + error.message;
+      return;
+    }
     console.error("Night Shop login error during " + stage + ":", error);
     note.textContent = stage === "opening the shop"
       ? "Your login worked, but the shop could not load. " + (error?.message || "")
@@ -108,7 +135,8 @@ if (session) {
   try {
     await enterShop();
   } catch (error) {
-    console.error("Night Shop session restore error:", error);
-    if (note) note.textContent = "Your session is saved, but the shop could not load. " + (error?.message || "");
+    if (error?.locked) { showClosedDoor(true, "🔒 " + error.message); }
+    else console.error("Night Shop session restore error:", error);
+    if (!error?.locked && note) note.textContent = "Your session is saved, but the shop could not load. " + (error?.message || "");
   }
 }

@@ -16,6 +16,14 @@ if (!profile.access_enabled) {
 }
 const isOwner = Boolean(profile.is_owner);
 
+/* The door: the owner can always come in; members only while the lights are blue (shop open). */
+if (!isOwner) {
+  const { data: door } = await supabase.from("shop_status").select("is_open").eq("id", 1).maybeSingle();
+  if (door && !door.is_open) {
+    throw Object.assign(new Error("The door is locked. The lights are red, so only the owner can come in right now."), { locked: true });
+  }
+}
+
 /* ---------- helpers ---------- */
 const $ = selector => root.querySelector(selector);
 const $$ = selector => [...root.querySelectorAll(selector)];
@@ -69,6 +77,8 @@ function patch(el, html) {
   });
 }
 
+const tabsMarkup = (id, a, b) => `<div class="tabs" id="${id}"><button type="button" data-tab="active" class="on">${a} <span class="count" id="${id}-count-active">0</span></button><button type="button" data-tab="history">${b} <span class="count" id="${id}-count-history">0</span></button></div>`;
+
 /* ---------- the menu: three floating holograms ---------- */
 const ITEMS = [
   { id: "ice",  icon: "❄️", name: "Honeydrippers", detail: "Frozen Kool-Aid ice cups with candy and/or fruit", kind: "amount", color: "blue",   art: "./art/holo-ice.jpg",  spot: { l: 61.5, t: 28, w: 10, h: 29 } },
@@ -82,9 +92,10 @@ const ownerMarkup = isOwner ? `
     <h2>OWNER CONTROLS</h2>
     <button id="toggle-shop" class="lights-btn" type="button">💡 LIGHTS</button>
     <p class="muted small">Blue lights = shop open. Red lights = shop closed. Members see the change within seconds.</p>
-    <h3>INCOMING ORDERS</h3>
+    ${tabsMarkup("owner-tabs", "Active", "History")}
+    <h3 id="owner-orders-title">INCOMING ORDERS</h3>
     <div id="owner-orders" class="stack">Loading…</div>
-    <h3>CUSTOMER MESSAGES</h3>
+    <h3 id="owner-messages-title">CUSTOMER MESSAGES</h3>
     <div id="owner-messages" class="stack">Loading…</div>
     <h3>EXTERIOR ARTWORK</h3>
     <p class="muted small">Replace the storefront picture from your phone Gallery. JPG, PNG, or WebP · up to 15 MB.</p>
@@ -115,8 +126,11 @@ root.innerHTML = `
 
   <section class="panel">
     <h2>YOUR ORDERS</h2>
+    ${tabsMarkup("my-tabs", "Orders", "History")}
     <div id="order-history" class="stack">Loading…</div>
   </section>
+
+  <section class="panel" id="app-panel" hidden></section>
 
   ${ownerMarkup}
 
@@ -178,6 +192,8 @@ root.innerHTML = `
   </div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
 </div>`;
+
+try { window.nightshopPwa?.mountPanel($("#app-panel"), { supabase, toast }); } catch (e) { console.error("App panel failed:", e); }
 
 /* ---------- look around the lounge (drag, swipe, or arrow buttons) ---------- */
 const RATIO = 690 / 336;
@@ -345,6 +361,8 @@ const threadFor = (orderId, messages, customerId) => messages
 const replyLines = reply => String(reply || "").split("\n").map(line => line.trim()).filter(line => line && line !== DONE);
 const hasDone = m => String(m?.reply || "").split("\n").some(line => line.trim() === DONE);
 const isDone = (order, thread) => cls(order.status) === "done" || thread.some(hasDone);
+const isFinished = (order, thread) => isDone(order, thread) || cls(order.status) === "denied";   // finished orders live in History
+const stripDone = reply => String(reply || "").split("\n").filter(line => line.trim() !== DONE).join("\n").trim();
 const myChoice = thread => thread.some(m => ["delivery", "meetup"].includes(parseTagged(m).kind));
 
 /* hide-from-view list: used only if the database does not allow customers to delete their own messages */
@@ -472,24 +490,45 @@ $("#order-history").addEventListener("click", event => {
 /* ---------- member: order history + replies ---------- */
 const seenOrders = new Map();
 let ordersLoaded = false, myOrders = [], myMessages = [];
+let myTab = "active";
+function setMyTab(tab) {
+  myTab = tab;
+  $$("#my-tabs [data-tab]").forEach(btn => btn.classList.toggle("on", btn.dataset.tab === tab));
+  renderMyOrders();
+}
+$("#my-tabs").addEventListener("click", event => { const btn = event.target.closest("[data-tab]"); if (btn) setMyTab(btn.dataset.tab); });
 function renderMyOrders() {
-  $("#order-history").innerHTML = myOrders.map(o => {
-    const thread = threadFor(o.id, myMessages), done = isDone(o, thread);
-    const last = [...thread].reverse().flatMap(m => replyLines(m.reply).reverse())[0];
+  const rows = myOrders.map(o => { const thread = threadFor(o.id, myMessages); return { o, thread, done: isDone(o, thread), finished: isFinished(o, thread) }; });
+  const active = rows.filter(r => !r.finished), history = rows.filter(r => r.finished);
+  $("#my-tabs-count-active").textContent = active.length;
+  $("#my-tabs-count-history").textContent = history.length;
+  const list = myTab === "history" ? history : active;
+  patch($("#order-history"), list.map(({ o, thread, done }) => {
     const pill = done ? '<span class="status status-done">Done ✅</span>' : `<span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span>`;
-    return `<div class="row-card" data-order-card="${safe(o.id)}"><div><b>${safe(o.item)}</b><small>${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}${last ? `<div class="reply">🕴️ ${safe(last)}</div>` : ""}<button type="button" class="ghost open-thread" data-thread="${safe(o.id)}">💬 ${done ? "View conversation" : "Conversation · add directions or changes"}</button></div>`;
-  }).join("") || "No orders yet.";
+    const info = `<div><b>${safe(o.item)}</b><small>${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}`;
+    if (myTab === "history") return `<div class="row-card" data-order-card="${safe(o.id)}">${info}</div>`;   // the conversation is closed and gone
+    const last = [...thread].reverse().flatMap(m => replyLines(m.reply).reverse())[0];
+    return `<div class="row-card" data-order-card="${safe(o.id)}">${info}${last ? `<div class="reply">🕴️ ${safe(last)}</div>` : ""}<button type="button" class="ghost open-thread" data-thread="${safe(o.id)}">💬 Conversation · add directions or changes</button></div>`;
+  }).join("") || (myTab === "history" ? "No past orders yet." : "No open orders."));
+}
+/* open an order from an alert: open orders open their chat, finished ones show in History */
+function showOrder(id) {
+  const order = myOrders.find(o => String(o.id) === String(id)); if (!order) return;
+  if (isFinished(order, threadFor(order.id, myMessages))) {
+    closeThread(); setMyTab("history");
+    setTimeout(() => flash($('#order-history [data-order-card="' + id + '"]')), 100);
+  } else { setMyTab("active"); openThread(id); }
 }
 async function loadOrders() {
   const { data, error } = await supabase.from("orders").select("id,item,quantity,total_amount,status,created_at")
-    .eq("customer_id", user.id).order("created_at", { ascending: false }).limit(10);
+    .eq("customer_id", user.id).order("created_at", { ascending: false }).limit(60);
   if (error) { $("#order-history").textContent = "Could not load orders."; return; }
   myOrders = data || [];
   renderMyOrders();
   renderThread();
   myOrders.forEach(o => {
     if (ordersLoaded && seenOrders.has(o.id) && seenOrders.get(o.id) !== o.status && cls(o.status) !== "pending") {
-      toast("The Night Shop: your order — " + String(STATUS_LABEL[cls(o.status)] || o.status), "alert", () => openThread(o.id));
+      toast("The Night Shop: your order — " + String(STATUS_LABEL[cls(o.status)] || o.status), "alert", () => showOrder(o.id));
     }
     seenOrders.set(o.id, o.status);
   });
@@ -503,22 +542,26 @@ function openBath(messageId) {
   if (messageId != null) setTimeout(() => flash($('#message-history [data-msg-row="' + messageId + '"]')), 150);
 }
 async function loadMessages() {
-  const { data, error } = await supabase.from("messages").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(150);
+  const { data, error } = await supabase.from("messages").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(600);
   const box = $("#message-history");
   if (error) { box.textContent = "Could not load messages."; return; }
   myMessages = data || [];
   // order conversations live on the order; only plain messages show in the bathroom window
-  const plain = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)));
-  box.innerHTML = plain.slice(0, 20).map(m => `<div class="row-card msg" data-msg-row="${safe(m.id)}"><div><b>You</b><small>${safe(m.message)}</small>${m.reply ? `<div class="reply">🕴️ ${safe(m.reply)}</div>` : ""}</div><button type="button" class="mini-del" data-del="${safe(m.id)}" aria-label="Delete this message">🗑</button></div>`).join("");
+  const plain = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)) && !hasDone(m));   // a closed conversation disappears
+  box.innerHTML = plain.slice(0, 20).map(m => `<div class="row-card msg" data-msg-row="${safe(m.id)}"><div><b>You</b><small>${safe(m.message)}</small>${replyLines(m.reply).length ? `<div class="reply">🕴️ ${safe(replyLines(m.reply).join("\n"))}</div>` : ""}</div><button type="button" class="mini-del" data-del="${safe(m.id)}" aria-label="Delete this message">🗑</button></div>`).join("");
   $("#clear-chat").hidden = !plain.length;
   myMessages.forEach(m => {
     if (hiddenIds.has(String(m.id))) return;
-    const key = m.id ?? m.created_at, t = parseTagged(m), reply = m.reply || "";
-    if (messagesLoaded && reply && seenReplies.get(key) !== reply) {
-      if (t) toast(replyLines(reply).length ? "The shadow replied about your order." : "Your order is complete ✅", "alert", () => openThread(t.orderId));
-      else toast("The shadow replied to your message.", "alert", () => openBath(m.id));
+    const key = m.id ?? m.created_at, t = parseTagged(m), lines = replyLines(m.reply).join("\n"), done = hasDone(m);
+    const prev = seenReplies.get(key) || { lines: "", done: false };
+    if (messagesLoaded) {
+      if (lines && lines !== prev.lines && !(done && !t)) {
+        if (t) toast("The shadow replied about your order.", "alert", () => showOrder(t.orderId));
+        else toast("The shadow replied to your message.", "alert", () => openBath(m.id));
+      }
+      if (t && done && !prev.done) toast("Your order is complete ✅", "alert", () => showOrder(t.orderId));
     }
-    seenReplies.set(key, reply);
+    seenReplies.set(key, { lines, done });
   });
   messagesLoaded = true;
   renderMyOrders();
@@ -551,13 +594,17 @@ $("#message-history").addEventListener("click", event => {
   if (message) deleteMessages([message]);
 });
 $("#clear-chat").addEventListener("click", () => {
-  const plain = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)));
+  const plain = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)) && !hasDone(m));
   if (plain.length && confirm("Delete your whole conversation with the shadow? This can't be undone.")) deleteMessages(plain);
 });
-$("#sign-out").addEventListener("click", async () => { await supabase.auth.signOut(); location.reload(); });
+$("#sign-out").addEventListener("click", async () => {
+  try { await window.nightshopPwa?.release?.(supabase); } catch { /* alerts cleanup is best effort */ }
+  await supabase.auth.signOut(); location.reload();
+});
 
 /* ---------- owner tools ---------- */
 let loadOwnerOrders = async () => {}, loadOwnerMessages = async () => {};
+const ownerShow = { order() {}, message() {} };
 if (isOwner) {
   const names = async ids => {
     const map = new Map();
@@ -591,10 +638,30 @@ if (isOwner) {
     return out.join("");
   }).join("");
 
+  let ownerTab = "active";
+  const ownerRows = () => ownerOrders.map(o => { const thread = threadFor(o.id, ownerMsgs, o.customer_id); return { o, thread, done: isDone(o, thread), finished: isFinished(o, thread) }; });
+  // order chats show on their order card; show a message on its own only if no matching order is loaded
+  const ownerPlain = () => ownerMsgs.filter(m => { const t = parseTagged(m); return !t || !ownerOrders.some(o => String(o.id) === t.orderId && o.customer_id === m.customer_id); });
+  function refreshOwnerCounts() {
+    const rows = ownerRows(), plain = ownerPlain();
+    $("#owner-tabs-count-active").textContent = rows.filter(r => !r.finished).length + plain.filter(m => !hasDone(m)).length;
+    $("#owner-tabs-count-history").textContent = rows.filter(r => r.finished).length + plain.filter(hasDone).length;
+  }
+  function setOwnerTab(tab) {
+    ownerTab = tab;
+    $$("#owner-tabs [data-tab]").forEach(btn => btn.classList.toggle("on", btn.dataset.tab === tab));
+    $("#owner-orders-title").textContent = tab === "history" ? "PAST ORDERS" : "INCOMING ORDERS";
+    $("#owner-messages-title").textContent = tab === "history" ? "OLD MESSAGES" : "CUSTOMER MESSAGES";
+    renderOwnerOrders(); renderOwnerMessages();
+  }
+  $("#owner-tabs").addEventListener("click", event => { const btn = event.target.closest("[data-tab]"); if (btn) setOwnerTab(btn.dataset.tab); });
+
   function renderOwnerOrders() {
-    const rows = ownerOrders.map(o => { const thread = threadFor(o.id, ownerMsgs, o.customer_id); return { o, thread, done: isDone(o, thread) }; });
-    const rank = r => r.done ? 2 : cls(r.o.status) === "pending" ? 0 : 1;
-    rows.sort((x, y) => rank(x) - rank(y));
+    const all = ownerRows();
+    const rows = all.filter(r => ownerTab === "history" ? r.finished : !r.finished);
+    const rank = r => cls(r.o.status) === "pending" ? 0 : 1;
+    if (ownerTab === "active") rows.sort((x, y) => rank(x) - rank(y));
+    refreshOwnerCounts();
     patch($("#owner-orders"), rows.map(({ o, thread, done }) => {
       const name = ownerNames.get(o.customer_id) || "Member";
       const target = [...thread].reverse().find(m => parseTagged(m).kind !== "order") || thread[thread.length - 1];
@@ -602,20 +669,20 @@ if (isOwner) {
         ? `<div class="thread-box"><span class="fulfil-tag">CONVERSATION</span><div class="chat">${ownerBubbles(thread, name)}</div>${done ? '<div class="bubble sys">✅ Done</div>' : `<form class="msg-bar small-bar" data-msg="${safe(target.id ?? "")}" data-append="1"><input data-draft="r:${safe(target.id ?? "")}" name="reply" maxlength="500" placeholder="Reply to ${safe(name)}…" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></form>`}</div>`
         : '<small class="pending-note">No conversation yet (older order)</small>';
       const pill = done ? '<span class="status status-done">Done ✅</span>' : `<span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span>`;
-      return `<div class="row-card order-card ${!done && cls(o.status) === "pending" ? "is-new" : ""} ${done ? "is-done" : ""}" data-order-card="${safe(o.id)}"><div><b>${safe(o.item)}</b><small>${safe(name)} · ${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}<div class="decide"><button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied">Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button><button type="button" class="d-done" data-done="${safe(o.id)}" ${done ? "disabled" : ""}>Done</button></div>${chat}</div>`;
-    }).join("") || "No orders yet.");
+      return `<div class="row-card order-card ${!done && cls(o.status) === "pending" ? "is-new" : ""} ${done ? "is-done" : ""}" data-order-card="${safe(o.id)}"><div><b>${safe(o.item)}</b><small>${safe(name)} · ${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}<div class="decide">${done ? `<button type="button" class="d-wait" data-reopen="${safe(o.id)}">↩ Reopen</button>` : `<button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied" ${cls(o.status) === "denied" ? "disabled" : ""}>Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button><button type="button" class="d-done" data-done="${safe(o.id)}">Done</button>`}</div>${chat}</div>`;
+    }).join("") || (ownerTab === "history" ? "No past orders yet." : "No open orders."));
   }
   const orderCard = id => $('#owner-orders [data-order-card="' + id + '"]');
 
   loadOwnerOrders = async () => {
-    const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at").order("created_at", { ascending: false }).limit(40);
+    const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at").order("created_at", { ascending: false }).limit(100);
     if (error) { $("#owner-orders").textContent = "Could not load orders."; return; }
     ownerOrders = data || [];
     await learnNames(ownerOrders.map(o => o.customer_id));
     renderOwnerOrders();
     ownerOrders.forEach(o => {
       if (cls(o.status) === "pending" && !knownPending.has(o.id)) {
-        if (ownerOrdersLoaded) toast("New order: " + o.item + " · " + money(o.total_amount), "alert", () => flash(orderCard(o.id)));
+        if (ownerOrdersLoaded) toast("New order: " + o.item + " · " + money(o.total_amount), "alert", () => ownerShow.order(o.id));
         knownPending.add(o.id);
       }
     });
@@ -624,6 +691,8 @@ if (isOwner) {
   $("#owner-orders").addEventListener("click", async event => {
     const doneButton = event.target.closest("[data-done]");
     if (doneButton) { await markDone(doneButton.dataset.done); return; }
+    const reopenButton = event.target.closest("[data-reopen]");
+    if (reopenButton) { await reopenOrder(reopenButton.dataset.reopen); return; }
     const button = event.target.closest("[data-order]"); if (!button) return;
     button.disabled = true;
     const { error } = await supabase.from("orders").update({ status: button.dataset.status }).eq("id", button.dataset.order);
@@ -642,17 +711,39 @@ if (isOwner) {
     await Promise.all([loadOwnerMessages(), loadOwnerOrders()]);
   }
 
+  async function reopenOrder(orderId) {
+    const order = ownerOrders.find(o => String(o.id) === String(orderId)); if (!order) return;
+    const marked = threadFor(order.id, ownerMsgs, order.customer_id).filter(hasDone);
+    const results = marked.length
+      ? await Promise.all(marked.map(m => supabase.from("messages").update({ reply: stripDone(m.reply) || null }).eq("id", m.id).select("id")))
+      : [await supabase.from("orders").update({ status: "confirmed" }).eq("id", order.id).select("id")];
+    if (results.some(r => r.error || !(r.data || []).length)) { toast("Could not reopen it.", "alert"); return; }
+    toast("Order reopened.");
+    await Promise.all([loadOwnerMessages(), loadOwnerOrders()]);
+  }
+  async function setMessageDone(id, done) {
+    const m = ownerMsgs.find(x => String(x.id) === String(id)); if (!m) return;
+    const reply = done ? (m.reply ? m.reply + "\n" : "") + DONE : (stripDone(m.reply) || null);
+    const { data, error } = await supabase.from("messages").update({ reply }).eq("id", m.id).select("id");
+    if (error || !(data || []).length) { console.error(error); toast("Could not update that message.", "alert"); return; }
+    toast(done ? "Moved to History." : "Message reopened.");
+    await loadOwnerMessages();
+  }
+  $("#owner-messages").addEventListener("click", event => {
+    const d = event.target.closest("[data-msg-done]"), r = event.target.closest("[data-msg-reopen]");
+    if (d) setMessageDone(d.dataset.msgDone, true);
+    if (r) setMessageDone(r.dataset.msgReopen, false);
+  });
+
   const knownMessages = new Set();
   let ownerMessagesLoaded = false;
   loadOwnerMessages = async () => {
-    const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(200);
+    const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(600);
     const box = $("#owner-messages");
     if (error) { box.textContent = "Could not load messages."; return; }
     ownerMsgs = data || [];
     await learnNames(ownerMsgs.map(m => m.customer_id));
-    // order conversations appear on their order card; show them here only if no matching order is loaded
-    const plain = ownerMsgs.filter(m => { const t = parseTagged(m); return !t || !ownerOrders.some(o => String(o.id) === t.orderId && o.customer_id === m.customer_id); }).slice(0, 30);
-    patch(box, plain.map(m => `<form class="row-card msg reply-form" data-msg="${safe(m.id ?? "")}"><div><b>${safe(ownerNames.get(m.customer_id) || "Member")}</b><small>${safe(m.message.replace(TAG, ""))} · ${when(m.created_at)}</small>${m.reply ? `<div class="reply">You: ${safe(m.reply)}</div>` : ""}<div class="msg-bar small-bar"><input data-draft="m:${safe(m.id ?? "")}" name="reply" maxlength="1000" placeholder="${m.reply ? "Send another reply…" : "Reply as the shadow…"}" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></div></div></form>`).join("") || "No messages yet.");
+    renderOwnerMessages();
     ownerMsgs.forEach(m => {
       const key = m.id ?? m.created_at;
       if (knownMessages.has(key)) return;
@@ -660,11 +751,33 @@ if (isOwner) {
       if (!ownerMessagesLoaded || m.reply) return;
       const t = parseTagged(m), name = ownerNames.get(m.customer_id) || "Member";
       if (t && t.kind === "order") return;                      // the order alert already covers this one
-      if (t) toast(name + " · " + kindLabel(t.kind) + (t.body ? ": " + t.body.slice(0, 50) : ""), "alert", () => flash(orderCard(t.orderId)));
-      else toast("New message from " + name + ": " + String(m.message).slice(0, 50), "alert", () => flash($('#owner-messages [data-msg="' + m.id + '"]')));
+      if (t) toast(name + " · " + kindLabel(t.kind) + (t.body ? ": " + t.body.slice(0, 50) : ""), "alert", () => ownerShow.order(t.orderId));
+      else toast("New message from " + name + ": " + String(m.message).slice(0, 50), "alert", () => ownerShow.message(m.id));
     });
     ownerMessagesLoaded = true;
     renderOwnerOrders();
+  };
+  function renderOwnerMessages() {
+    const box = $("#owner-messages");
+    const plain = ownerPlain().filter(m => ownerTab === "history" ? hasDone(m) : !hasDone(m)).slice(0, 60);
+    refreshOwnerCounts();
+    patch(box, plain.map(m => {
+      const name = safe(ownerNames.get(m.customer_id) || "Member");
+      const lines = replyLines(m.reply).map(l => safe(l)).join("\n");
+      const head = `<b>${name}</b><small>${safe(m.message.replace(TAG, ""))} · ${when(m.created_at)}</small>${lines ? `<div class="reply">You: ${lines}</div>` : ""}`;
+      if (ownerTab === "history") return `<div class="row-card msg is-done" data-msg="${safe(m.id ?? "")}"><div>${head}</div><div class="decide"><button type="button" class="d-wait" data-msg-reopen="${safe(m.id ?? "")}">↩ Reopen</button></div></div>`;
+      return `<form class="row-card msg reply-form" data-msg="${safe(m.id ?? "")}" data-append="1"><div>${head}<div class="msg-bar small-bar"><input data-draft="m:${safe(m.id ?? "")}" name="reply" maxlength="1000" placeholder="${lines ? "Send another reply…" : "Reply as the shadow…"}" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></div><div class="decide"><button type="button" class="d-done" data-msg-done="${safe(m.id ?? "")}">✅ Done · move to history</button></div></div></form>`;
+    }).join("") || (ownerTab === "history" ? "No old messages yet." : "No messages."));
+  }
+  ownerShow.order = id => {
+    const row = ownerRows().find(r => String(r.o.id) === String(id));
+    setOwnerTab(row && row.finished ? "history" : "active");
+    setTimeout(() => flash(orderCard(id)), 100);
+  };
+  ownerShow.message = id => {
+    const m = ownerMsgs.find(x => String(x.id) === String(id));
+    setOwnerTab(m && hasDone(m) ? "history" : "active");
+    setTimeout(() => flash($('#owner-messages [data-msg="' + id + '"]')), 100);
   };
   async function sendOwnerReply(event) {
     event.preventDefault();
@@ -721,3 +834,18 @@ const poll = () => {
 };
 setInterval(poll, 15000);
 document.addEventListener("visibilitychange", poll);
+
+/* ---------- deep links: from a lock-screen notification or an in-app alert ---------- */
+function handleGo(go) {
+  const [kind, ...rest] = String(go || "").split(":"), id = rest.join(":");
+  if (!kind || !id) return;
+  if (kind === "o-order" && isOwner) ownerShow.order(id);
+  else if (kind === "o-msg" && isOwner) ownerShow.message(id);
+  else if (kind === "order" || kind === "history") showOrder(id);
+  else if (kind === "msg") openBath(id);
+}
+try {
+  const go = new URLSearchParams(location.search).get("go");
+  if (go) { handleGo(go); history.replaceState(null, "", location.pathname); }
+} catch { /* ignore */ }
+navigator.serviceWorker?.addEventListener("message", event => { if (event.data?.type === "nightshop-go") handleGo(event.data.go); });

@@ -1,0 +1,31 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'app.nightshop'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'app.nightshop.club'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+    signingConfigs {
+        release {
+            storeFile file(System.getenv('KS_PATH') ?: 'release.jks')
+            storePassword System.getenv('KS_PASS')
+            keyAlias 'nightshop'
+            keyPassword System.getenv('KS_PASS')
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

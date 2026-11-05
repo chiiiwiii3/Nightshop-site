@@ -214,4 +214,4 @@ body.entry-open{overflow:hidden}
 
 .lounge-world{display:flex}
 .lounge-copy{position:relative;flex:0 0 auto;width:33.3333%;height:100%}
-.nsx .look:disabled{opacity:1;cursor:pointer}
+.nsx .look:disabled{opacity:.3;cursor:default}

@@ -144,7 +144,7 @@ root.innerHTML = `
     </div>
     <button class="look look-left" id="look-left" type="button" aria-label="Look left">‹</button>
     <button class="look look-right" id="look-right" type="button" aria-label="Look right">›</button>
-    <p class="lounge-hint">SPIN TO LOOK AROUND · TAP A HOLOGRAM</p>
+    <p class="lounge-hint">DRAG TO LOOK AROUND · TAP A HOLOGRAM</p>
     <div class="closed-veil" id="closed-veil" hidden><b>THE LOUNGE IS CLOSED</b><span>You can still check your orders below and message the shadow through the bathroom door.</span></div>
   </section>
 
@@ -219,16 +219,19 @@ root.innerHTML = `
 
 try { window.nightshopPwa?.mountPanel($("#app-panel"), { supabase, toast }); } catch (e) { console.error("App panel failed:", e); }
 
-/* ---------- look around the lounge: a 360° spin. Drag or swipe, or use the arrows; it wraps around forever ---------- */
+/* ---------- look around the lounge: drag or swipe, or use the arrows. It stops at each end of the panorama ---------- */
 const RATIO = 1584 / 672;
 const viewport = $("#lounge-viewport");
 const world = $("#lounge-world");
-let pan = 0, picW = 0, laidOut = false, dragged = false, spinning = null;
+let pan = 0, maxPan = 0, picW = 0, laidOut = false, dragged = false, spinning = null;
 
 function setPan(value) {
   if (!picW) return;
-  pan = ((value % picW) + picW) % picW;                       // wrap: past one edge you come back in at the other
-  world.style.transform = "translate3d(" + (-(picW + pan)) + "px,0,0)";   // three copies side by side, we always show the middle one's range
+  maxPan = Math.max(0, picW - viewport.clientWidth);
+  pan = Math.min(maxPan, Math.max(0, value));                 // never past either end, so the picture's join is never shown
+  world.style.transform = "translate3d(" + (-(picW + pan)) + "px,0,0)";   // the middle copy of the picture is the one in view
+  $("#look-left").disabled = pan <= 1;
+  $("#look-right").disabled = pan >= maxPan - 1;
 }
 function layout() {
   const vw = viewport.clientWidth;
@@ -281,7 +284,7 @@ const endDrag = () => {
   setTimeout(() => { dragged = false; }, 0);
   if (wasDrag && Math.abs(velocity) > 0.05) {                 // keep gliding after you let go
     let v = velocity * 16, prev = performance.now();
-    const glide = now => { const dt = (now - prev) / 16; prev = now; setPan(pan + v * dt); v *= Math.pow(0.94, dt); if (Math.abs(v) > 0.15) spinning = requestAnimationFrame(glide); };
+    const glide = now => { const dt = (now - prev) / 16; prev = now; setPan(pan + v * dt); v *= Math.pow(0.94, dt); if (pan <= 0 || pan >= maxPan) v = 0; if (Math.abs(v) > 0.15) spinning = requestAnimationFrame(glide); };
     spinning = requestAnimationFrame(glide);
   }
 };

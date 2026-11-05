@@ -16,14 +16,6 @@ if (!profile.access_enabled) {
 }
 const isOwner = Boolean(profile.is_owner);
 
-/* The door: the owner can always come in; members only while the lights are blue (shop open). */
-if (!isOwner) {
-  const { data: door } = await supabase.from("shop_status").select("is_open").eq("id", 1).maybeSingle();
-  if (door && !door.is_open) {
-    throw Object.assign(new Error("The door is locked. The lights are red, so only the owner can come in right now."), { locked: true });
-  }
-}
-
 /* ---------- helpers ---------- */
 const $ = selector => root.querySelector(selector);
 const $$ = selector => [...root.querySelectorAll(selector)];
@@ -141,7 +133,7 @@ root.innerHTML = `
     <button class="look look-left" id="look-left" type="button" aria-label="Look left">‹</button>
     <button class="look look-right" id="look-right" type="button" aria-label="Look right">›</button>
     <p class="lounge-hint">DRAG TO LOOK AROUND · TAP A HOLOGRAM TO ORDER</p>
-    <div class="closed-veil" id="closed-veil" hidden><b>SHOP IS CLOSED</b><span>The lights are red. Check back when they turn blue.</span></div>
+    <div class="closed-veil" id="closed-veil" hidden><b>THE LOUNGE IS CLOSED</b><span>You can still check your orders below and message the shadow through the bathroom door.</span></div>
   </section>
 
   <section class="panel">
@@ -273,7 +265,7 @@ function applyTheme() {
   pill.textContent = shopOpen ? "● OPEN" : "● CLOSED";
   pill.className = "pill " + (shopOpen ? "pill-open" : "pill-closed");
   $("#closed-veil").hidden = shopOpen;
-  $$("[data-product]").forEach(button => { button.disabled = !shopOpen; });
+  $$("[data-product]").forEach(button => { button.disabled = !shopOpen; button.hidden = !shopOpen; });
   if (!shopOpen) closeOrder();
   const lights = $("#toggle-shop");
   if (lights) lights.textContent = shopOpen ? "💡 LIGHTS BLUE · SHOP OPEN — tap to close" : "💡 LIGHTS RED · SHOP CLOSED — tap to open";

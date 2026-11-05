@@ -205,3 +205,9 @@ body.entry-open{overflow:hidden}
 
 .nsx .spot .spot-tag{opacity:0;transition:opacity .2s;top:100%;z-index:5}
 .nsx .spot:hover .spot-tag,.nsx .spot:focus-visible .spot-tag{opacity:1}
+
+/* closed: members keep their profile and the bathroom door; ordering is switched off */
+.closed-veil{inset:0 0 auto 0;flex-direction:column;justify-content:flex-start;padding:10px 14px;background:linear-gradient(rgba(0,0,0,.75),transparent)}
+.closed-veil b{color:#ffd36a;text-shadow:0 0 12px #ffd36a88;font-size:clamp(16px,4.4vw,28px)}
+.closed-veil span{color:#e8f2ff;font-size:12px}
+.lounge:has(.closed-veil:not([hidden])) .lounge-art{filter:brightness(.7) saturate(.85)}

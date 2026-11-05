@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-interior-7";
+const SHOP_VERSION = "nightshop-interior-8";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
@@ -42,17 +42,16 @@ questionForm?.addEventListener("submit", async event => {
   questionForm.reset();
 });
 
-// Door lock: red lights = closed = only the owner may come in. The real check happens in shop.js
-// after login (it knows who is the owner); this just shows the sign on the door.
+// Red sign = closed. Members can still sign in (profile + bathroom only); ordering is switched off inside.
 function showClosedDoor(closed, message) {
   const hint = document.querySelector("#tap-hint");
   const lock = document.querySelector("#entry-lock");
   const scene = document.querySelector("#street-scene");
   if (scene) { scene.classList.toggle("door-closed", Boolean(closed)); scene.classList.toggle("door-open", !closed); }
-  if (hint) hint.textContent = closed ? "🔒 THE SHOP IS CLOSED · OWNER ONLY" : "TAP THE DOORS TO ENTER";
+  if (hint) hint.textContent = closed ? "🔒 CLOSED · MEMBERS CAN STILL SIGN IN" : "TAP THE DOORS TO ENTER";
   if (lock) {
     lock.hidden = !closed;
-    lock.textContent = message || "🔒 The lights are red. The shop is closed, only the owner can come in right now.";
+    lock.textContent = message || "🔒 The shop is closed. Members can still sign in to check orders and message the shadow.";
   }
 }
 async function checkDoor() {

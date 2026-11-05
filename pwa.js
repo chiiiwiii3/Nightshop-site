@@ -109,4 +109,28 @@ function mountPanel(el, { supabase, toast }) {
   panels.push(draw); draw();
 }
 
+/* Invitation link (?invite=1): in a normal browser, show an install screen first. */
+function inviteGate() {
+  let invited = false;
+  try { invited = new URLSearchParams(location.search).get("invite") === "1"; } catch { /* ignore */ }
+  if (!invited || standalone()) return;
+  const el = document.createElement("div");
+  el.id = "invite-gate"; el.className = "invite-gate";
+  const steps = isIOS
+    ? '<ol class="small"><li>Tap the <b>Share</b> button in Safari (square with an arrow).</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li><li>Open <b>Night Shop</b> from your Home Screen.</li></ol>'
+    : '<p class="small" id="gate-help">Tap the button below to add it to your home screen.</p>';
+  el.innerHTML = '<div class="gate-card"><div class="crest">♛</div><h1>THE NIGHT SHOP</h1><p class="small">You\'re invited. Add the app to your phone to come in.</p>' + steps +
+    (isIOS ? "" : '<button type="button" id="gate-install" class="order-go">📲 ADD TO HOME SCREEN</button>') +
+    '<button type="button" class="ghost" id="gate-skip">Continue in browser</button></div>';
+  document.body.append(el);
+  const close = () => { el.remove(); try { history.replaceState(null, "", location.pathname); } catch { /* ignore */ } };
+  el.querySelector("#gate-skip").addEventListener("click", close);
+  el.querySelector("#gate-install")?.addEventListener("click", async () => {
+    if (installEvent) { installEvent.prompt(); try { await installEvent.userChoice; } catch { /* ignore */ } installEvent = null; close(); }
+    else el.querySelector("#gate-help").textContent = "Open your browser menu (⋮) and tap Install app or Add to Home screen.";
+  });
+  addEventListener("appinstalled", close);
+}
+if (document.readyState !== "loading") inviteGate(); else addEventListener("DOMContentLoaded", inviteGate);
+
 window.nightshopPwa = { mountPanel, release, openInstall };

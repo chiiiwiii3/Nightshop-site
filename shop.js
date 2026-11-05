@@ -112,6 +112,11 @@ const ownerMarkup = isOwner ? `
     <div id="owner-orders" class="stack">Loading…</div>
     <h3 id="owner-messages-title">CUSTOMER MESSAGES</h3>
     <div id="owner-messages" class="stack">Loading…</div>
+    <h3>INVITE MEMBERS</h3>
+    <p class="muted small">Show this to someone and have them scan it with their camera, or tap Share. It opens an install screen first, so they get the app on their Home Screen.</p>
+    <div class="invite-box"><img id="invite-qr" src="./icons/invite-qr.svg" alt="Scan to join The Night Shop" width="200" height="200"></div>
+    <div class="app-row"><button type="button" id="invite-share">📤 Share invite</button><button type="button" class="ghost" id="invite-copy">Copy link</button></div>
+    <p class="muted small" id="invite-note" aria-live="polite"></p>
     <h3>EXTERIOR ARTWORK</h3>
     <p class="muted small">Replace the storefront picture from your phone Gallery. JPG, PNG, or WebP · up to 15 MB.</p>
     <input id="exterior-upload" type="file" accept="image/jpeg,image/png,image/webp">
@@ -810,6 +815,18 @@ if (isOwner) {
   }
   $("#owner-messages").addEventListener("submit", sendOwnerReply);
   $("#owner-orders").addEventListener("submit", sendOwnerReply);
+
+  const inviteUrl = () => location.origin + location.pathname.replace(/index\.html$/, "") + "?invite=1";
+  $("#invite-share").addEventListener("click", async () => {
+    try {
+      if (navigator.share) await navigator.share({ title: "The Night Shop", text: "You're invited. Tap to enter The Night Shop.", url: inviteUrl() });
+      else throw new Error("no share");
+    } catch (e) { if (e?.name !== "AbortError") $("#invite-note").textContent = "Sharing isn't available here. Tap Copy link instead."; }
+  });
+  $("#invite-copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(inviteUrl()); $("#invite-note").textContent = "Link copied."; }
+    catch { $("#invite-note").textContent = "Couldn't copy. Use the QR code or Share instead."; }
+  });
 
   const artworkInput = $("#exterior-upload");
   const artworkStatus = $("#exterior-upload-status");

@@ -62,6 +62,21 @@ function flash(el) {
   setTimeout(() => el.classList.remove("flash"), 2200);
 }
 
+/* in-app confirm box (the browser's own box would show the website address instead of "Shadowman") */
+function ask(text, okLabel = "OK") {
+  return new Promise(resolve => {
+    const el = document.createElement("div");
+    el.className = "sheet"; el.style.zIndex = 400;
+    el.innerHTML = '<div class="sheet-card" role="alertdialog" aria-modal="true" style="--c:#ffd98a"><h2>🕴️ SHADOWMAN</h2><p class="ask-text"></p><div class="app-row"><button type="button" class="ghost" data-a="no">Cancel</button><button type="button" data-a="yes"></button></div></div>';
+    el.querySelector(".ask-text").textContent = text;
+    el.querySelector('[data-a="yes"]').textContent = okLabel;
+    const done = v => { el.remove(); resolve(v); };
+    el.addEventListener("click", e => { const a = e.target.closest("[data-a]"); if (a) done(a.dataset.a === "yes"); else if (e.target === el) done(false); });
+    document.body.append(el);
+    el.querySelector('[data-a="no"]').focus();
+  });
+}
+
 /* redraw a list only when it changed, and keep whatever the person is typing in it (the app refreshes every 15 seconds) */
 function patch(el, html) {
   if (!el || el.__html === html) return;
@@ -593,9 +608,9 @@ $("#message-history").addEventListener("click", event => {
   const message = myMessages.find(m => String(m.id) === button.dataset.del);
   if (message) deleteMessages([message]);
 });
-$("#clear-chat").addEventListener("click", () => {
+$("#clear-chat").addEventListener("click", async () => {
   const plain = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)) && !hasDone(m));
-  if (plain.length && confirm("Delete your whole conversation with the shadow? This can't be undone.")) deleteMessages(plain);
+  if (plain.length && await ask("Delete your whole conversation with the shadow? This can't be undone.", "Delete")) deleteMessages(plain);
 });
 $("#sign-out").addEventListener("click", async () => {
   try { await window.nightshopPwa?.release?.(supabase); } catch { /* alerts cleanup is best effort */ }
@@ -701,7 +716,7 @@ if (isOwner) {
   });
   async function markDone(orderId) {
     const order = ownerOrders.find(o => String(o.id) === String(orderId)); if (!order) return;
-    if (!confirm("Mark this order done? The customer's chat for it will close.")) return;
+    if (!(await ask("Mark this order done? The customer's chat for it will close.", "Mark done"))) return;
     const thread = threadFor(order.id, ownerMsgs, order.customer_id), last = thread[thread.length - 1];
     const result = last
       ? await supabase.from("messages").update({ reply: (last.reply ? last.reply + "\n" : "") + DONE }).eq("id", last.id).select("id")

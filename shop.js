@@ -88,9 +88,9 @@ const tabsMarkup = (id, a, b) => `<div class="tabs" id="${id}"><button type="but
 
 /* ---------- the menu: three floating holograms ---------- */
 const ITEMS = [
-  { id: "ice",  icon: "❄️", name: "Honeydrippers", detail: "Frozen Kool-Aid ice cups with candy and/or fruit", kind: "amount", color: "mint",  spot: { l: 44.2, t: 50, w: 7, h: 16 } },
-  { id: "tea",  icon: "🌴", name: "Herbal teas",   detail: "Small or Big · choose a bundle",                    kind: "tea",    color: "green", spot: { l: 49.0, t: 47.5, w: 7, h: 16 } },
-  { id: "shot", icon: "⚕️", name: "Herbal shots",  detail: "Small or Medium · priced per shot glass",           kind: "shot",   color: "gold",  spot: { l: 53.8, t: 50, w: 7, h: 16 } }
+  { id: "ice",  icon: "❄️", name: "Honeydrippers", detail: "Frozen Kool-Aid ice cups with candy and/or fruit", kind: "amount", color: "mint",  spot: { l: 47.8, t: 50, w: 7.6, h: 16 } },
+  { id: "tea",  icon: "🌴", name: "Herbal teas",   detail: "Small or Big · choose a bundle",                    kind: "tea",    color: "green", spot: { l: 53.0, t: 47.5, w: 7.6, h: 16 } },
+  { id: "shot", icon: "⚕️", name: "Herbal shots",  detail: "Small or Medium · priced per shot glass",           kind: "shot",   color: "gold",  spot: { l: 58.2, t: 50, w: 7.6, h: 16 } }
 ];
 const COLORS = { mint: "#8dffe6", green: "#38ff7a", gold: "#ffd36a" };
 
@@ -125,14 +125,26 @@ root.innerHTML = `
   <section class="lounge" aria-label="Lu’s Lounge lounge">
     <div class="lounge-viewport" id="lounge-viewport">
       <div class="lounge-world" id="lounge-world">
-        <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: a leather couch, pool table, graffiti wall and a bar with glowing holograms" draggable="false">
-        ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
-        <button type="button" class="spot-door" id="bath-sign" aria-label="Open the bathroom window" style="left:33.1%;top:36.5%;width:5.1%;height:22.5%"><span class="spot-ring"></span></button>
+        <div class="lounge-copy">
+          <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign" draggable="false">
+          ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
+          <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:36%;top:36.5%;width:5%;height:22.5%"><span class="spot-ring"></span></button>
+        </div>
+        <div class="lounge-copy">
+          <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign" draggable="false">
+          ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
+          <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:36%;top:36.5%;width:5%;height:22.5%"><span class="spot-ring"></span></button>
+        </div>
+        <div class="lounge-copy">
+          <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign" draggable="false">
+          ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
+          <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:36%;top:36.5%;width:5%;height:22.5%"><span class="spot-ring"></span></button>
+        </div>
       </div>
     </div>
     <button class="look look-left" id="look-left" type="button" aria-label="Look left">‹</button>
     <button class="look look-right" id="look-right" type="button" aria-label="Look right">›</button>
-    <p class="lounge-hint">DRAG TO LOOK AROUND · TAP A HOLOGRAM TO ORDER</p>
+    <p class="lounge-hint">SPIN TO LOOK AROUND · TAP A HOLOGRAM</p>
     <div class="closed-veil" id="closed-veil" hidden><b>THE LOUNGE IS CLOSED</b><span>You can still check your orders below and message the shadow through the bathroom door.</span></div>
   </section>
 
@@ -207,31 +219,29 @@ root.innerHTML = `
 
 try { window.nightshopPwa?.mountPanel($("#app-panel"), { supabase, toast }); } catch (e) { console.error("App panel failed:", e); }
 
-/* ---------- look around the lounge (drag, swipe, or arrow buttons) ---------- */
-const RATIO = 1584 / 672;
+/* ---------- look around the lounge: a 360° spin. Drag or swipe, or use the arrows; it wraps around forever ---------- */
+const RATIO = 1464 / 672;
 const viewport = $("#lounge-viewport");
 const world = $("#lounge-world");
-let pan = 0, maxPan = 0, laidOut = false, dragged = false;
+let pan = 0, picW = 0, laidOut = false, dragged = false, spinning = null;
 
-function setPan(value, animate = false) {
-  pan = Math.min(maxPan, Math.max(0, value));
-  world.style.transition = animate ? "transform .35s ease" : "none";
-  world.style.transform = "translate3d(" + (-pan) + "px,0,0)";
-  $("#look-left").disabled = pan <= 1;
-  $("#look-right").disabled = pan >= maxPan - 1;
+function setPan(value) {
+  if (!picW) return;
+  pan = ((value % picW) + picW) % picW;                       // wrap: past one edge you come back in at the other
+  world.style.transform = "translate3d(" + (-(picW + pan)) + "px,0,0)";   // three copies side by side, we always show the middle one's range
 }
 function layout() {
   const vw = viewport.clientWidth;
   if (!vw) return;                                          // shop not on screen yet; the observer below calls us again
-  const ratioPan = maxPan ? pan / maxPan : 1;              // start looking at the bar and holograms
   const height = Math.max(Math.min(Math.max(vw / RATIO, 320), Math.round(window.innerHeight * 0.62), 560), vw / RATIO);
-  const width = height * RATIO;
+  const width = height * RATIO, before = picW;
   viewport.style.height = height + "px";
-  world.style.width = width + "px";
+  world.style.width = (width * 3) + "px";
   world.style.height = height + "px";
-  world.style.setProperty("--wu", (width / 100) + "px");     // 1% of the picture's width, so the sign scales with the scene
-  maxPan = Math.max(0, width - vw);
-  setPan(laidOut ? ratioPan * maxPan : maxPan);
+  world.style.setProperty("--wu", (width / 100) + "px");     // 1% of the picture's width, so the holograms scale with the scene
+  picW = width;
+  // first view: look at the coffee table and the holograms
+  setPan(laidOut ? pan * (width / before) : 0.565 * width - vw / 2);
   laidOut = true;
 }
 layout();
@@ -239,22 +249,47 @@ new ResizeObserver(layout).observe(viewport);               // re-fit whenever t
 window.addEventListener("resize", layout);
 window.addEventListener("orientationchange", () => setTimeout(layout, 250));
 
-let dragStart = null;
+function spinTo(target, ms = 380) {
+  cancelAnimationFrame(spinning);
+  const from = pan, t0 = performance.now();
+  const step = now => {
+    const k = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+    setPan(from + (target - from) * e);
+    if (k < 1) spinning = requestAnimationFrame(step);
+  };
+  spinning = requestAnimationFrame(step);
+}
+let dragStart = null, last = null, velocity = 0;
 viewport.addEventListener("pointerdown", event => {
+  cancelAnimationFrame(spinning);
   dragStart = { x: event.clientX, pan, id: event.pointerId };
+  last = { x: event.clientX, t: performance.now() }; velocity = 0;
   dragged = false;
 });
 viewport.addEventListener("pointermove", event => {
   if (!dragStart || event.pointerId !== dragStart.id) return;
   const dx = event.clientX - dragStart.x;
   if (!dragged && Math.abs(dx) > 6) { dragged = true; viewport.setPointerCapture?.(event.pointerId); }
-  if (dragged) setPan(dragStart.pan - dx);
+  if (dragged) {
+    setPan(dragStart.pan - dx);
+    const now = performance.now(), dt = Math.max(1, now - last.t);
+    velocity = 0.8 * velocity + 0.2 * ((last.x - event.clientX) / dt); last = { x: event.clientX, t: now };
+  }
 });
-const endDrag = () => { dragStart = null; setTimeout(() => { dragged = false; }, 0); };
+const endDrag = () => {
+  const wasDrag = dragged; dragStart = null;
+  setTimeout(() => { dragged = false; }, 0);
+  if (wasDrag && Math.abs(velocity) > 0.05) {                 // keep gliding after you let go
+    let v = velocity * 16, prev = performance.now();
+    const glide = now => { const dt = (now - prev) / 16; prev = now; setPan(pan + v * dt); v *= Math.pow(0.94, dt); if (Math.abs(v) > 0.15) spinning = requestAnimationFrame(glide); };
+    spinning = requestAnimationFrame(glide);
+  }
+};
 viewport.addEventListener("pointerup", endDrag);
 viewport.addEventListener("pointercancel", endDrag);
-$("#look-left").addEventListener("click", () => setPan(pan - viewport.clientWidth * 0.45, true));
-$("#look-right").addEventListener("click", () => setPan(pan + viewport.clientWidth * 0.45, true));
+$("#look-left").addEventListener("click", () => spinTo(pan - viewport.clientWidth * 0.5));
+$("#look-right").addEventListener("click", () => spinTo(pan + viewport.clientWidth * 0.5));
+window.__spin = { get pan() { return pan; }, set: setPan };   // used by the tests
 
 /* ---------- shop open (blue lights) / closed (red lights) ---------- */
 let shopOpen = false, statusKnown = false;
@@ -333,7 +368,7 @@ root.addEventListener("click", event => {
 /* the restroom sign opens the bathroom window */
 const bathSheet = $("#bath-sheet");
 const closeBath = () => { bathSheet.hidden = true; };
-$("#bath-sign").addEventListener("click", () => { if (dragged) return; bathSheet.hidden = false; });
+root.addEventListener("click", event => { if (event.target.closest("[data-bath]")) { if (dragged) return; bathSheet.hidden = false; } });
 $("#bath-close").addEventListener("click", closeBath);
 bathSheet.addEventListener("click", event => { if (event.target.id === "bath-sheet") closeBath(); });
 document.addEventListener("keydown", event => { if (event.key === "Escape") { closeBath(); closeOrder(); closeFulfil(); closeThread(); } });

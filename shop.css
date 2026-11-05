@@ -211,3 +211,7 @@ body.entry-open{overflow:hidden}
 .closed-veil b{color:#ffd36a;text-shadow:0 0 12px #ffd36a88;font-size:clamp(16px,4.4vw,28px)}
 .closed-veil span{color:#e8f2ff;font-size:12px}
 .lounge:has(.closed-veil:not([hidden])) .lounge-art{filter:brightness(.7) saturate(.85)}
+
+.lounge-world{display:flex}
+.lounge-copy{position:relative;flex:0 0 auto;width:33.3333%;height:100%}
+.nsx .look:disabled{opacity:1;cursor:pointer}

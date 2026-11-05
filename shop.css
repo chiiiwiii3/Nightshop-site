@@ -1,9 +1,9 @@
-/* THE NIGHT SHOP — inside the shop. Blue lights = open, red lights = closed (set by body.theme-open / body.theme-closed). */
-:root{--accent:#3ec6ff;--accent-rgb:62,198,255}
-body.theme-open{--accent:#3ec6ff;--accent-rgb:62,198,255}
-body.theme-closed{--accent:#ff365f;--accent-rgb:255,54,95}
-body.theme-open:before{background:linear-gradient(180deg,rgba(2,8,22,.15),rgba(2,8,22,.9)),radial-gradient(ellipse at 50% 10%,#134487 0,#08142c 46%,#02040a 100%)}
-body.theme-closed:before{background:linear-gradient(180deg,rgba(24,2,8,.15),rgba(24,2,8,.9)),radial-gradient(ellipse at 50% 10%,#85122b 0,#2f0813 46%,#0b0206 100%)}
+/* LU’S LOUNGE — inside the shop. Blue lights = open, red lights = closed (set by body.theme-open / body.theme-closed). */
+:root{--accent:#38ff7a;--accent-rgb:56,255,122}
+body.theme-open{--accent:#38ff7a;--accent-rgb:56,255,122}
+body.theme-closed{--accent:#38ff7a;--accent-rgb:56,255,122}
+body.theme-open:before,body.theme-closed:before{background:linear-gradient(180deg,rgba(2,14,8,.15),rgba(2,10,6,.9)),radial-gradient(ellipse at 50% 10%,#0f4a2a 0,#06180f 46%,#020805 100%)}
+
 
 .nsx{width:min(100% - 20px,1100px);margin:0 auto;padding:6px 0 46px;text-align:left;color:#f2f6ff;font-family:Arial,Helvetica,sans-serif}
 .nsx [hidden],.sheet[hidden]{display:none!important}
@@ -27,10 +27,10 @@ body.theme-closed:before{background:linear-gradient(180deg,rgba(24,2,8,.15),rgba
 .lounge-viewport:active{cursor:grabbing}
 .lounge-world{position:relative;will-change:transform}
 .lounge-art{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;transition:filter .8s}
-body.theme-closed .lounge-art{filter:sepia(1) saturate(4) hue-rotate(-38deg) brightness(.72)}
+
 .nsx .spot{position:absolute;padding:0;margin:0;border:0;border-radius:50% / 42%;background:transparent;box-shadow:none;text-transform:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .nsx .spot:hover{filter:none;box-shadow:none;background:rgba(255,255,255,.05)}
-.spot-blue{--sc:#3ec6ff}.spot-green{--sc:#38ff7a}.spot-purple{--sc:#b36bff}
+.spot-mint{--sc:#8dffe6}.spot-green{--sc:#38ff7a}.spot-gold{--sc:#ffd36a}
 .spot-ring{position:absolute;inset:-4%;border-radius:50% / 42%;border:2px solid var(--sc);box-shadow:0 0 18px var(--sc),inset 0 0 14px var(--sc);animation:holo-pulse 2.6s ease-in-out infinite;pointer-events:none}
 @keyframes holo-pulse{0%,100%{opacity:.15;transform:scale(.97)}50%{opacity:.85;transform:scale(1.03)}}
 .spot-tag{position:absolute;left:50%;top:104%;transform:translateX(-50%);white-space:nowrap;padding:5px 9px;border-radius:99px;border:1px solid var(--sc);background:rgba(3,6,14,.82);color:#fff;font:700 10px Arial;letter-spacing:1px;box-shadow:0 0 12px var(--sc);pointer-events:none}
@@ -185,3 +185,23 @@ body.entry-open{overflow:hidden}
 .gate-card h1{font:22px Georgia,serif;letter-spacing:5px;margin:6px 0 12px;color:#b8eaff}
 .gate-card ol{text-align:left;margin:12px 0 16px;padding-left:20px;line-height:1.6}
 .gate-card button{width:100%;margin-top:10px}
+
+/* floating holograms over the coffee table */
+.nsx .spot{overflow:visible;border-radius:12px}
+.holo-glyph{position:absolute;left:0;right:0;top:4%;text-align:center;font-size:calc(var(--wu,10px) * 4.4);line-height:1;filter:drop-shadow(0 0 calc(var(--wu,10px)*1.1) var(--sc)) drop-shadow(0 0 calc(var(--wu,10px)*.4) #fff);animation:holo-float 3.4s ease-in-out infinite;pointer-events:none}
+.nsx .spot:nth-of-type(2) .holo-glyph{animation-delay:-1.1s}.nsx .spot:nth-of-type(3) .holo-glyph{animation-delay:-2.2s}
+.nsx .spot:before{content:"";position:absolute;left:14%;right:14%;top:52%;bottom:-4%;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--sc) 38%,transparent));clip-path:polygon(30% 0,70% 0,100% 100%,0 100%);filter:blur(3px);pointer-events:none}
+.nsx .spot .spot-ring{inset:auto 6% -3% 6%;height:16%;border-radius:50%}
+@keyframes holo-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7%)}}
+.nsx .spot-door{position:absolute;z-index:3;padding:0;margin:0;border:0;background:transparent;border-radius:3px;cursor:pointer;--sc:#ffd36a;-webkit-tap-highlight-color:transparent}
+.nsx .spot-door:hover{background:rgba(255,211,106,.08);filter:none;box-shadow:none}
+.spot-door .spot-ring{inset:-2%;border-radius:4px;opacity:.75}
+.sheet-holo span{font-size:92px;line-height:1.1;filter:drop-shadow(0 0 16px var(--c)) drop-shadow(0 0 4px #fff);animation:holo-float 3.4s ease-in-out infinite}
+.sheet-holo{align-items:center}
+/* outside only: the crown sign turns blue when the shop is open, stays red when closed */
+.exterior-frame .sign-glow{position:absolute;left:33%;top:1%;width:23%;height:23%;pointer-events:none;opacity:0;transition:opacity .6s;border-radius:50%}
+.door-open .sign-glow{opacity:1;mix-blend-mode:color;background:radial-gradient(ellipse at 50% 50%,#2b9dff 0,#2b9dffcc 48%,transparent 72%)}
+.door-closed .sign-glow{opacity:.7;mix-blend-mode:screen;background:radial-gradient(ellipse at 50% 50%,#ff2a4a66 0,transparent 70%)}
+
+.nsx .spot .spot-tag{opacity:0;transition:opacity .2s;top:100%;z-index:5}
+.nsx .spot:hover .spot-tag,.nsx .spot:focus-visible .spot-tag{opacity:1}

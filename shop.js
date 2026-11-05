@@ -96,11 +96,11 @@ const tabsMarkup = (id, a, b) => `<div class="tabs" id="${id}"><button type="but
 
 /* ---------- the menu: three floating holograms ---------- */
 const ITEMS = [
-  { id: "ice",  icon: "❄️", name: "Honeydrippers", detail: "Frozen Kool-Aid ice cups with candy and/or fruit", kind: "amount", color: "blue",   art: "./art/holo-ice.jpg",  spot: { l: 61.5, t: 28, w: 10, h: 29 } },
-  { id: "tea",  icon: "🌴", name: "Herbal teas",   detail: "Small or Big · choose a bundle",                    kind: "tea",    color: "green",  art: "./art/holo-tea.jpg",  spot: { l: 73.0, t: 28, w: 10, h: 29 } },
-  { id: "shot", icon: "⚕️", name: "Herbal shots",  detail: "Small or Medium · priced per shot glass",           kind: "shot",   color: "purple", art: "./art/holo-shot.jpg", spot: { l: 84.5, t: 26, w: 11.5, h: 31 } }
+  { id: "ice",  icon: "❄️", name: "Honeydrippers", detail: "Frozen Kool-Aid ice cups with candy and/or fruit", kind: "amount", color: "mint",  spot: { l: 44.2, t: 50, w: 7, h: 16 } },
+  { id: "tea",  icon: "🌴", name: "Herbal teas",   detail: "Small or Big · choose a bundle",                    kind: "tea",    color: "green", spot: { l: 49.0, t: 47.5, w: 7, h: 16 } },
+  { id: "shot", icon: "⚕️", name: "Herbal shots",  detail: "Small or Medium · priced per shot glass",           kind: "shot",   color: "gold",  spot: { l: 53.8, t: 50, w: 7, h: 16 } }
 ];
-const COLORS = { blue: "#3ec6ff", green: "#38ff7a", purple: "#b36bff" };
+const COLORS = { mint: "#8dffe6", green: "#38ff7a", gold: "#ffd36a" };
 
 const ownerMarkup = isOwner ? `
   <section class="panel owner-panel" id="owner-panel">
@@ -114,7 +114,7 @@ const ownerMarkup = isOwner ? `
     <div id="owner-messages" class="stack">Loading…</div>
     <h3>INVITE MEMBERS</h3>
     <p class="muted small">Show this to someone and have them scan it with their camera, or tap Share. It opens an install screen first, so they get the app on their Home Screen.</p>
-    <div class="invite-box"><img id="invite-qr" src="./icons/invite-qr.svg" alt="Scan to join The Night Shop" width="200" height="200"></div>
+    <div class="invite-box"><img id="invite-qr" src="./icons/invite-qr.svg" alt="Scan to join Lu’s Lounge" width="200" height="200"></div>
     <div class="app-row"><button type="button" id="invite-share">📤 Share invite</button><button type="button" class="ghost" id="invite-copy">Copy link</button></div>
     <p class="muted small" id="invite-note" aria-live="polite"></p>
     <h3>EXTERIOR ARTWORK</h3>
@@ -126,16 +126,16 @@ const ownerMarkup = isOwner ? `
 root.innerHTML = `
 <div class="nsx">
   <header class="nsx-top">
-    <div class="nsx-brand"><span class="nsx-crest">♛</span><div><h1>THE NIGHT SHOP</h1><p>Welcome in, ${safe(profile.display_name || "member")}</p></div></div>
+    <div class="nsx-brand"><span class="nsx-crest">♛</span><div><h1>LU’S LOUNGE</h1><p>Welcome in, ${safe(profile.display_name || "member")}</p></div></div>
     <div class="nsx-actions"><span id="shop-pill" class="pill">Checking…</span><button id="sign-out" class="ghost" type="button">Sign out</button></div>
   </header>
 
-  <section class="lounge" aria-label="The Night Shop lounge">
+  <section class="lounge" aria-label="Lu’s Lounge lounge">
     <div class="lounge-viewport" id="lounge-viewport">
       <div class="lounge-world" id="lounge-world">
         <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: a leather couch, pool table, graffiti wall and a bar with glowing holograms" draggable="false">
-        ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
-        <button type="button" class="spot-sign" id="bath-sign" aria-label="Open the bathroom window" style="left:4.6%;top:72.5%;width:9%;height:15%"><span class="spot-ring"></span><span class="sign-icons" aria-hidden="true">♂ ♀</span><span class="sign-label" aria-hidden="true">RESTROOM</span></button>
+        ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
+        <button type="button" class="spot-door" id="bath-sign" aria-label="Open the bathroom window" style="left:33.1%;top:36.5%;width:5.1%;height:22.5%"><span class="spot-ring"></span></button>
       </div>
     </div>
     <button class="look look-left" id="look-left" type="button" aria-label="Look left">‹</button>
@@ -157,7 +157,7 @@ root.innerHTML = `
   <div class="sheet" id="order-sheet" hidden>
     <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="order-title">
       <button type="button" class="sheet-close" id="order-close" aria-label="Close">×</button>
-      <div class="sheet-holo"><img id="order-art" alt=""></div>
+      <div class="sheet-holo"><span id="order-glyph" aria-hidden="true"></span></div>
       <h2 id="order-title"></h2>
       <p id="order-detail" class="muted"></p>
       <div id="order-options"></div>
@@ -216,7 +216,7 @@ root.innerHTML = `
 try { window.nightshopPwa?.mountPanel($("#app-panel"), { supabase, toast }); } catch (e) { console.error("App panel failed:", e); }
 
 /* ---------- look around the lounge (drag, swipe, or arrow buttons) ---------- */
-const RATIO = 690 / 336;
+const RATIO = 1584 / 672;
 const viewport = $("#lounge-viewport");
 const world = $("#lounge-world");
 let pan = 0, maxPan = 0, laidOut = false, dragged = false;
@@ -321,7 +321,7 @@ function openOrder(item) {
   opt = { amount: 20, size: "Small", bundle: 1, qty: 1 };
   const sheet = $("#order-sheet");
   sheet.style.setProperty("--c", COLORS[item.color]);
-  $("#order-art").src = item.art;
+  $("#order-glyph").textContent = item.icon;
   $("#order-title").textContent = item.icon + " " + item.name;
   $("#order-detail").textContent = item.detail;
   $("#order-note").textContent = "";
@@ -548,7 +548,7 @@ async function loadOrders() {
   renderThread();
   myOrders.forEach(o => {
     if (ordersLoaded && seenOrders.has(o.id) && seenOrders.get(o.id) !== o.status && cls(o.status) !== "pending") {
-      toast("The Night Shop: your order — " + String(STATUS_LABEL[cls(o.status)] || o.status), "alert", () => showOrder(o.id));
+      toast("Lu’s Lounge: your order — " + String(STATUS_LABEL[cls(o.status)] || o.status), "alert", () => showOrder(o.id));
     }
     seenOrders.set(o.id, o.status);
   });
@@ -819,7 +819,7 @@ if (isOwner) {
   const inviteUrl = () => location.origin + location.pathname.replace(/index\.html$/, "") + "?invite=1";
   $("#invite-share").addEventListener("click", async () => {
     try {
-      if (navigator.share) await navigator.share({ title: "The Night Shop", text: "You're invited. Tap to enter The Night Shop.", url: inviteUrl() });
+      if (navigator.share) await navigator.share({ title: "Lu’s Lounge", text: "You're invited. Tap to enter Lu’s Lounge.", url: inviteUrl() });
       else throw new Error("no share");
     } catch (e) { if (e?.name !== "AbortError") $("#invite-note").textContent = "Sharing isn't available here. Tap Copy link instead."; }
   });

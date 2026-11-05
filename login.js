@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-interior-6";
+const SHOP_VERSION = "nightshop-interior-7";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
@@ -47,6 +47,8 @@ questionForm?.addEventListener("submit", async event => {
 function showClosedDoor(closed, message) {
   const hint = document.querySelector("#tap-hint");
   const lock = document.querySelector("#entry-lock");
+  const scene = document.querySelector("#street-scene");
+  if (scene) { scene.classList.toggle("door-closed", Boolean(closed)); scene.classList.toggle("door-open", !closed); }
   if (hint) hint.textContent = closed ? "🔒 THE SHOP IS CLOSED · OWNER ONLY" : "TAP THE DOORS TO ENTER";
   if (lock) {
     lock.hidden = !closed;
@@ -121,7 +123,7 @@ form?.addEventListener("submit", async (event) => {
       note.textContent = "🔒 " + error.message;
       return;
     }
-    console.error("Night Shop login error during " + stage + ":", error);
+    console.error("Lu’s Lounge login error during " + stage + ":", error);
     note.textContent = stage === "opening the shop"
       ? "Your login worked, but the shop could not load. " + (error?.message || "")
       : "Problem while " + stage + ". " + (error?.message || "Please try again.");
@@ -136,7 +138,7 @@ if (session) {
     await enterShop();
   } catch (error) {
     if (error?.locked) { showClosedDoor(true, "🔒 " + error.message); }
-    else console.error("Night Shop session restore error:", error);
+    else console.error("Lu’s Lounge session restore error:", error);
     if (!error?.locked && note) note.textContent = "Your session is saved, but the shop could not load. " + (error?.message || "");
   }
 }

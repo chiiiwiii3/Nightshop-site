@@ -35,8 +35,8 @@ async function openInstall() {
   }
   const el = sheet();
   el.querySelector(".install-steps").innerHTML = isIOS
-    ? '<ol class="small"><li>Open this page in <b>Safari</b>.</li><li>Tap the <b>Share</b> button (square with an arrow).</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li><li>Open <b>Night Shop</b> from your Home Screen and sign in there. Alerts only work from the Home Screen app on iPhone.</li></ol>'
-    : '<ol class="small"><li>Open the browser menu <b>⋮</b> (top right in Chrome).</li><li>Tap <b>Install app</b> or <b>Add to Home screen</b>.</li><li>Open <b>Night Shop</b> from your home screen.</li></ol>';
+    ? '<ol class="small"><li>Open this page in <b>Safari</b>.</li><li>Tap the <b>Share</b> button (square with an arrow).</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li><li>Open <b>Lu’s Lounge</b> from your Home Screen and sign in there. Alerts only work from the Home Screen app on iPhone.</li></ol>'
+    : '<ol class="small"><li>Open the browser menu <b>⋮</b> (top right in Chrome).</li><li>Tap <b>Install app</b> or <b>Add to Home screen</b>.</li><li>Open <b>Lu’s Lounge</b> from your home screen.</li></ol>';
   el.hidden = false;
 }
 
@@ -117,9 +117,9 @@ function inviteGate() {
   const el = document.createElement("div");
   el.id = "invite-gate"; el.className = "invite-gate";
   const steps = isIOS
-    ? '<ol class="small"><li>Tap the <b>Share</b> button in Safari (square with an arrow).</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li><li>Open <b>Night Shop</b> from your Home Screen.</li></ol>'
+    ? '<ol class="small"><li>Tap the <b>Share</b> button in Safari (square with an arrow).</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li><li>Open <b>Lu’s Lounge</b> from your Home Screen.</li></ol>'
     : '<p class="small" id="gate-help">Tap the button below to add it to your home screen.</p>';
-  el.innerHTML = '<div class="gate-card"><div class="crest">♛</div><h1>THE NIGHT SHOP</h1><p class="small">You\'re invited. Add the app to your phone to come in.</p>' + steps +
+  el.innerHTML = '<div class="gate-card"><div class="crest">♛</div><h1>LU’S LOUNGE</h1><p class="small">You\'re invited. Add the app to your phone to come in.</p>' + steps +
     (isIOS ? "" : '<button type="button" id="gate-install" class="order-go">📲 ADD TO HOME SCREEN</button>') +
     '<button type="button" class="ghost" id="gate-skip">Continue in browser</button></div>';
   document.body.append(el);

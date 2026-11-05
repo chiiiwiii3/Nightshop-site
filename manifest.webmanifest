@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "The Night Shop",
-  "short_name": "Night Shop",
+  "name": "Lu’s Lounge",
+  "short_name": "Lu’s Lounge",
   "description": "Private members-only ordering.",
   "start_url": "./",
   "scope": "./",

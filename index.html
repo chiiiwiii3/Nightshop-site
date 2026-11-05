@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#080b19">
-<title>The Night Shop</title>
+<title>Lu’s Lounge</title>
 <style>
 :root{color-scheme:dark;--bg:#080b19;--panel:#15172c;--line:#55458a;--glow:#9270e8;--text:#f4f3ff;--muted:#aaa4c8}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% -10%,#292454,var(--bg) 58%);color:var(--text);font-family:Arial,sans-serif}
@@ -16,7 +16,7 @@ h2{color:#d2c1ff;letter-spacing:2px}input,textarea,select{width:100%;padding:13p
 #shop-app{display:none}.shop-panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;margin:15px 0}.shop-panel h2{margin-top:0}.muted{color:var(--muted)}.product-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.product-card{background:#101225;border:1px solid #403568;border-radius:10px;padding:16px;text-align:left}.product-card h3{color:#d5c6ff}.product-card button{width:100%}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.hidden{display:none!important}
 footer{text-align:center;padding:28px 10px;color:#77728f;font-size:11px;letter-spacing:2px}
 
-/* NIGHT SHOP — neon street-front + private lounge restoration */
+/* LU’S LOUNGE — neon street-front + private lounge restoration */
 :root{--blue:#43cfff;--violet:#9a68ff;--red:#ff365f;--gold:#d7bd82;--panel:#111522}
 body{background:#05070d;color:#f5f2eb;font-family:Georgia,'Times New Roman',serif;overflow-x:hidden}
 body:before{content:"";position:fixed;inset:0;z-index:-2;background:linear-gradient(180deg,rgba(3,5,12,.18),rgba(3,5,12,.88)),radial-gradient(ellipse at 50% 18%,#25334a 0,#0a101d 45%,#03050a 100%)}
@@ -28,7 +28,7 @@ h1{font-family:Georgia,serif;font-weight:normal;letter-spacing:7px;color:#f4e9d2
 main{position:relative;max-width:1180px;margin:12px auto 48px}
 #login-door{display:block;position:relative;isolation:isolate;overflow:hidden;width:min(100%,520px);margin:34px auto 55px;padding:34px 28px 28px;background:linear-gradient(145deg,rgba(13,20,34,.97),rgba(5,8,15,.98));border:1px solid #318db3;border-radius:3px;box-shadow:0 0 0 5px #101522,0 0 0 7px #4acfff55,0 0 35px #258bc988,inset 0 0 35px #1d8fbd22;text-align:center}
 #login-door:before{content:"";position:absolute;z-index:-1;inset:10px;border:1px solid #d2b87855;background:linear-gradient(90deg,transparent 48%,#46cfff12 50%,transparent 52%),linear-gradient(180deg,#17253a88,#080b13ee);box-shadow:inset 0 0 35px #41bff522}
-#login-door:after{content:"NIGHT SHOP  •  PRIVATE MEMBERS CLUB";display:block;margin:24px -10px 0;padding:13px 4px;border-top:1px solid #d2b87866;border-bottom:1px solid #d2b87866;color:#d7bd82;font:10px Arial,sans-serif;letter-spacing:3px}
+#login-door:after{content:"LU’S LOUNGE  •  PRIVATE MEMBERS CLUB";display:block;margin:24px -10px 0;padding:13px 4px;border-top:1px solid #d2b87866;border-bottom:1px solid #d2b87866;color:#d7bd82;font:10px Arial,sans-serif;letter-spacing:3px}
 #login-door h2{font-family:Georgia,serif;font-weight:normal;letter-spacing:5px;color:#b8eaff;text-shadow:0 0 14px #38bfff}
 #login-door .muted{color:#b5b9c7}
 input,textarea,select{border-radius:2px;border:1px solid #3a6a7d;background:#070d17;color:#fff}
@@ -83,24 +83,25 @@ footer{color:#777f91}
 <meta name="theme-color" content="#080b19">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Night Shop">
+<meta name="apple-mobile-web-app-title" content="Lu’s Lounge">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
-<link rel="stylesheet" href="./shop.css?v=nightshop-interior-6">
+<link rel="stylesheet" href="./shop.css?v=nightshop-interior-7">
 </head>
 <body>
 <header>
  <div class="crest">♛</div>
- <h1>THE NIGHT SHOP</h1>
+ <h1>LU’S LOUNGE</h1>
  <p class="subtitle">PRIVATE ACCESS · MEMBERS ONLY</p>
 </header>
 <main>
  
-<section id="street-scene" aria-label="The Night Shop exterior">
+<section id="street-scene" aria-label="Lu’s Lounge exterior">
  <div class="exterior-frame">
-  <img id="exterior-artwork" src="./exterior.jpg" width="1672" height="941" alt="The Night Shop at night: a neon crown sign over black double doors with a red carpet, and a restroom door on the right">
-  <button type="button" id="street-door" class="hotspot door-hotspot" aria-label="Enter The Night Shop"></button>
+  <img id="exterior-artwork" src="./exterior.jpg" width="1672" height="941" alt="Lu’s Lounge at night: a neon crown sign over black double doors with a red carpet, and a restroom door on the right">
+  <span class="sign-glow" id="sign-glow" aria-hidden="true"></span>
+  <button type="button" id="street-door" class="hotspot door-hotspot" aria-label="Enter Lu’s Lounge"></button>
   <button type="button" id="bathroom-door" class="hotspot bath-hotspot" aria-label="Open the private question door"></button>
   <p class="tap-hint" id="tap-hint">TAP THE DOORS TO ENTER</p>
   <div class="window-message" id="window-message" hidden>
@@ -129,7 +130,7 @@ footer{color:#777f91}
 </div>
  <section id="shop-app"></section>
 </main>
-<footer>THE NIGHT SHOP · PRIVATE ESTABLISHMENT<br><button type="button" id="install-btn" class="install-btn" hidden>📲 INSTALL THE APP</button></footer>
+<footer>LU’S LOUNGE · PRIVATE ESTABLISHMENT<br><button type="button" id="install-btn" class="install-btn" hidden>📲 INSTALL THE APP</button></footer>
 <script>
 /* Entrance: the door swings open into a full-screen login (no scrolling) */
 const entry = document.querySelector("#entry");
@@ -167,7 +168,7 @@ document.querySelector("#close-window")?.addEventListener("click", () => {
   if (windowMessage) windowMessage.hidden = true;
 });
 </script>
-<script type="module" src="./pwa.js?v=nightshop-interior-6"></script>
-<script type="module" src="./login.js?v=nightshop-interior-6"></script>
+<script type="module" src="./pwa.js?v=nightshop-interior-7"></script>
+<script type="module" src="./login.js?v=nightshop-interior-7"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
-/* The Night Shop service worker: makes the app installable, loads fast, and shows lock-screen alerts. */
-const CACHE = "nightshop-shell-5";
+/* Lu’s Lounge service worker: makes the app installable, loads fast, and shows lock-screen alerts. */
+const CACHE = "nightshop-shell-7";
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", event => {
   event.waitUntil((async () => {
@@ -28,7 +28,7 @@ self.addEventListener("fetch", event => {
 self.addEventListener("push", event => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) { data = { body: event.data && event.data.text() }; }
-  const title = data.title || "The Night Shop";
+  const title = data.title || "Lu’s Lounge";
   event.waitUntil(self.registration.showNotification(title, {
     body: data.body || "You have a new alert.",
     icon: "icons/icon-192.png",

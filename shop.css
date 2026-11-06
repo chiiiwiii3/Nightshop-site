@@ -215,3 +215,8 @@ body.entry-open{overflow:hidden}
 .lounge-world{display:flex}
 .lounge-copy{position:relative;flex:0 0 auto;width:33.3333%;height:100%}
 .nsx .look:disabled{opacity:.3;cursor:default}
+
+/* ---------- true 3D lounge ---------- */
+.room3d { position: relative; width: 100%; background: #010302; overflow: hidden; border-radius: 6px; }
+.room3d[hidden] { display: none; }
+.room3d-canvas { display: block; touch-action: none; cursor: grab; }

@@ -142,6 +142,7 @@ root.innerHTML = `
         </div>
       </div>
     </div>
+    <div class="room3d" id="room3d" hidden></div>
     <button class="look look-left" id="look-left" type="button" aria-label="Look left">‹</button>
     <button class="look look-right" id="look-right" type="button" aria-label="Look right">›</button>
     <p class="lounge-hint">DRAG TO LOOK AROUND · TAP A HOLOGRAM</p>
@@ -295,8 +296,9 @@ $("#look-right").addEventListener("click", () => spinTo(pan + viewport.clientWid
 window.__spin = { get pan() { return pan; }, set: setPan };   // used by the tests
 
 /* ---------- shop open (blue lights) / closed (red lights) ---------- */
-let shopOpen = false, statusKnown = false;
+let shopOpen = false, statusKnown = false, room3d = null;
 function applyTheme() {
+  room3d?.setOpen(shopOpen);
   document.body.classList.toggle("theme-open", shopOpen);
   document.body.classList.toggle("theme-closed", !shopOpen);
   const pill = $("#shop-pill");
@@ -372,6 +374,25 @@ root.addEventListener("click", event => {
 const bathSheet = $("#bath-sheet");
 const closeBath = () => { bathSheet.hidden = true; };
 root.addEventListener("click", event => { if (event.target.closest("[data-bath]")) { if (dragged) return; bathSheet.hidden = false; } });
+/* the real 3D room; if the phone can't do WebGL the flat panorama above stays as the fallback */
+(async () => {
+  try {
+    const gl = document.createElement("canvas").getContext("webgl2") || document.createElement("canvas").getContext("webgl");
+    if (!gl) throw new Error("no WebGL");
+    const { createRoom } = await import("./room3d.js?v=" + (new URL(import.meta.url).searchParams.get("v") || "1"));
+    const box3d = $("#room3d");
+    box3d.hidden = false;
+    room3d = createRoom(box3d, {
+      onProduct: id => { const item = ITEMS.find(entry => entry.id === id); if (item) openOrder(item); },
+      onBath: () => { bathSheet.hidden = false; }
+    });
+    room3d.setOpen(shopOpen);
+    viewport.hidden = true;
+    $("#look-left").hidden = true; $("#look-right").hidden = true;
+    $(".lounge-hint").textContent = "DRAG TO LOOK AROUND · TAP THE FLOOR TO WALK · TAP A HOLOGRAM";
+    window.__room3d = room3d;
+  } catch (e) { console.warn("3D room unavailable, using the flat view:", e); $("#room3d").hidden = true; }
+})();
 $("#bath-close").addEventListener("click", closeBath);
 bathSheet.addEventListener("click", event => { if (event.target.id === "bath-sheet") closeBath(); });
 document.addEventListener("keydown", event => { if (event.key === "Escape") { closeBath(); closeOrder(); closeFulfil(); closeThread(); } });

@@ -6,6 +6,9 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { Reflector } from "three/addons/objects/Reflector.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { addExtras } from "./room-extras.js?v=1";
 
@@ -31,17 +34,19 @@ function marbleTex(w, h, seed, gold = "#d9b25a", veins = 34) {
       g.fillStyle = grd; g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
     }
     g.lineCap = "round"; g.lineJoin = "round";
-    const vein = (x, y, ang, len, width, alpha) => {
+    const vein = (x, y, ang, len, width, alpha, col = gold) => {
       g.beginPath(); g.moveTo(x, y);
       for (let s = 0; s < len; s++) {
-        ang += (r() - 0.5) * 0.9; x += Math.cos(ang) * (8 + r() * 14); y += Math.sin(ang) * (8 + r() * 14);
+        ang += (r() - 0.5) * 0.55; x += Math.cos(ang) * (8 + r() * 14); y += Math.sin(ang) * (8 + r() * 14);
         g.lineTo(x, y);
-        if (r() < 0.05 && width > 0.6) vein(x, y, ang + (r() - 0.5) * 2, 6 + (r() * 14 | 0), width * 0.6, alpha * 0.8);
+        if (r() < 0.05 && width > 0.6) vein(x, y, ang + (r() - 0.5) * 2, 6 + (r() * 14 | 0), width * 0.6, alpha * 0.8, col);
       }
-      g.strokeStyle = gold; g.globalAlpha = alpha; g.lineWidth = width; g.shadowColor = gold; g.shadowBlur = 5; g.stroke();
+      g.strokeStyle = col; g.globalAlpha = alpha; g.lineWidth = width; g.shadowColor = col; g.shadowBlur = 2; g.stroke();
       g.globalAlpha = 1; g.shadowBlur = 0;
     };
-    for (let i = 0; i < veins; i++) vein(r() * W, r() * H, r() * Math.PI * 2, 18 + (r() * 40 | 0), 1 + r() * 2.2, 0.45 + r() * 0.5);
+    for (let i = 0; i < veins; i++) vein(r() * W, r() * H, r() * Math.PI * 2, 18 + (r() * 40 | 0), 0.5 + r() * 1.3, 0.3 + r() * 0.45);
+    for (let i = 0; i < veins * 0.8; i++) vein(r() * W, r() * H, r() * Math.PI * 2, 14 + (r() * 30 | 0), 0.4 + r() * 0.9, 0.12 + r() * 0.2, "#a9b8b0");
+    for (let i = 0; i < 5000; i++) { g.fillStyle = "rgba(255,255,255," + r() * 0.05 + ")"; g.fillRect(r() * W, r() * H, 1.5, 1.5); }
   });
 }
 const glow = (g, color, blur) => { g.shadowColor = color; g.shadowBlur = blur; };
@@ -56,7 +61,7 @@ function crownPath(g, cx, cy, s) {
 const M = {
   gold: new THREE.MeshStandardMaterial({ color: 0xd8ab4a, metalness: 1, roughness: 0.28 }),
   goldDim: new THREE.MeshStandardMaterial({ color: 0x8a6a2a, metalness: 1, roughness: 0.4 }),
-  leather: new THREE.MeshStandardMaterial({ color: 0x0b0b0e, roughness: 0.42, metalness: 0.08 }),
+  leather: new THREE.MeshPhysicalMaterial({ color: 0x0e0e11, roughness: 0.5, metalness: 0, clearcoat: 0.35, clearcoatRoughness: 0.4, bumpMap: canvasTex(256, 256, (g, w, h) => { const r = rng(3); g.fillStyle = "#808080"; g.fillRect(0, 0, w, h); for (let i = 0; i < 9000; i++) { const v = 100 + (r() * 60 | 0); g.fillStyle = "rgb(" + v + "," + v + "," + v + ")"; g.beginPath(); g.arc(r() * w, r() * h, 1 + r() * 1.6, 0, 7); g.fill(); } }, { repeat: [3, 3], srgb: false }), bumpScale: 1.2, sheen: 0.4, sheenColor: new THREE.Color(0x2a3a30) }),
   dark: new THREE.MeshStandardMaterial({ color: 0x07090b, roughness: 0.6, metalness: 0.2 }),
   wood: new THREE.MeshStandardMaterial({ color: 0x1a110b, roughness: 0.5, metalness: 0.1 }),
   felt: new THREE.MeshStandardMaterial({ color: 0x0a7a38, roughness: 0.95, metalness: 0 }),
@@ -67,11 +72,16 @@ const M = {
   neonPurple: new THREE.MeshBasicMaterial({ color: 0xa24dff, toneMapped: false }),
   warm: new THREE.MeshBasicMaterial({ color: 0xffd9a0, toneMapped: false })
 };
+const lit = (m, mat) => { if (mat.isMeshStandardMaterial) m.castShadow = m.receiveShadow = true; return m; };
 const box = (w, h, d, mat, x = 0, y = 0, z = 0, parent) => {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); parent?.add(m); return m;
+  const m = lit(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat), mat); m.position.set(x, y, z); parent?.add(m); return m;
 };
+const rbox = (w, h, d, mat, x = 0, y = 0, z = 0, parent) => {
+  const m = lit(new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 3, Math.min(0.09, Math.min(w, h, d) * 0.45)), mat), mat); m.position.set(x, y, z); parent?.add(m); return m;
+};
+const aoMat = new THREE.MeshBasicMaterial({ map: canvasTex(128, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(0,0,0,.8)"); gr.addColorStop(0.55, "rgba(0,0,0,.4)"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); }), transparent: true, depthWrite: false, toneMapped: false });
 const cyl = (rt, rb, h, mat, x = 0, y = 0, z = 0, seg = 28, parent) => {
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat); m.position.set(x, y, z); parent?.add(m); return m;
+  const m = lit(new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat), mat); m.position.set(x, y, z); parent?.add(m); return m;
 };
 
 /* ---------- the room ---------- */
@@ -81,11 +91,13 @@ export function createRoom(container, hooks = {}) {
   const interactive = [];                              // things you can tap
   const animated = [];                                 // per-frame functions
   const lights = [];
+  const ao = (x, z, w, d, ry = 0) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), aoMat); m.rotation.order = "YXZ"; m.rotation.set(-Math.PI / 2, ry, 0); m.position.set(x, 0.016, z); m.renderOrder = 2; scene.add(m); };
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
   const coarse = matchMedia("(pointer: coarse)").matches;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = false;   // the room is still, so shadows are drawn once
   renderer.domElement.className = "room3d-canvas";
   container.append(renderer.domElement);
 
@@ -93,7 +105,7 @@ export function createRoom(container, hooks = {}) {
   scene.background = new THREE.Color(0x010302);
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.22;
+  scene.environmentIntensity = 0.3;
 
   const camera = new THREE.PerspectiveCamera(72, 1, 0.05, 60);
   const eye = 1.62;
@@ -103,7 +115,10 @@ export function createRoom(container, hooks = {}) {
   /* ----- lighting ----- */
   scene.add(new THREE.HemisphereLight(0x2e6a4a, 0x050505, 0.6));
   const pt = (color, intensity, x, y, z, dist = 14) => { const l = new THREE.PointLight(color, intensity, dist, 2); l.position.set(x, y, z); scene.add(l); lights.push(l); return l; };
-  pt(0xffd9a0, 18, 0, 3.4, -1, 14);                    // chandelier
+  pt(0xffd9a0, 18, 0, 3.4, -1, 14);
+  const sm = coarse ? 512 : 1024;
+  const spot = (x, z, tx, tz, color, intensity) => { const l = new THREE.SpotLight(color, intensity, 12, 0.85, 0.8, 2); l.position.set(x, H - 0.3, z); l.target.position.set(tx, 0, tz); scene.add(l, l.target); l.castShadow = true; l.shadow.mapSize.set(sm, sm); l.shadow.bias = -0.0004; l.shadow.normalBias = 0.03; l.shadow.camera.near = 0.5; l.shadow.camera.far = 10; };
+  spot(1.2, -1, 0, -1, 0xffe0b0, 90); spot(0, -3.2, 0, -4.2, 0xffd9a0, 70); spot(5.6, -0.3, 5.6, -0.3, 0xffd8a0, 60); spot(6.2, 3.4, 6.2, 3.4, 0xffe0b0, 55); spot(-5.4, 1.6, -5.6, 1.6, 0xb8ffd0, 50);                    // chandelier
   pt(0x2cff7a, 14, -5, 3.9, 0, 14);
   pt(0x2cff7a, 14, 5, 3.9, 0, 14);
   pt(0xffb870, 9, 0, 2.6, -4.6, 9);                  // sign wall
@@ -112,15 +127,17 @@ export function createRoom(container, hooks = {}) {
 
   /* ----- floor ----- */
   const floorTex = marbleTex(2048, 1536, 11, "#e0b85c", 70);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.16, metalness: 0.55, envMapIntensity: 1.4 }));
-  floor.rotation.x = -Math.PI / 2; scene.add(floor);
+  const mirror = !coarse;                                // real reflections on computers; phones use the shiny finish only
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.14, metalness: mirror ? 0.2 : 0.55, envMapIntensity: 1.4, transparent: mirror, opacity: mirror ? 0.8 : 1 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+  if (mirror) { const rf = new Reflector(new THREE.PlaneGeometry(W, D), { clipBias: 0.003, textureWidth: 1024, textureHeight: 768, color: 0x9aa09c }); rf.rotation.x = -Math.PI / 2; rf.position.y = -0.004; scene.add(rf); }
   // green glow strips on the floor along the walls
   for (const [w, d, x, z] of [[W - 1, 0.1, 0, -5.55], [W - 1, 0.1, 0, 5.55], [0.1, D - 1, -8.55, 0], [0.1, D - 1, 8.55, 0]]) box(w, 0.02, d, M.neonGreen, x, 0.012, z, scene);
   box(7.5, 0.02, 0.07, M.neonGreen, 0, 0.012, -3.0, scene); box(7.5, 0.02, 0.07, M.neonGreen, 0, 0.012, 1.0, scene);
 
   /* ----- walls and ceiling ----- */
   const wallMat = (seed, rx, ry) => { const t = marbleTex(1024, 512, seed, "#9a7a38", 14); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); return new THREE.MeshStandardMaterial({ map: t, roughness: 0.32, metalness: 0.25 }); };
-  const wall = (w, h, mat, x, y, z, ry) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); m.position.set(x, y, z); m.rotation.y = ry; scene.add(m); return m; };
+  const wall = (w, h, mat, x, y, z, ry) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); m.receiveShadow = true; m.position.set(x, y, z); m.rotation.y = ry; scene.add(m); return m; };
   wall(W, H, wallMat(21, 3, 1), 0, H / 2, -D / 2, 0);                  // back
   wall(W, H, wallMat(22, 3, 1), 0, H / 2, D / 2, Math.PI);             // front (behind you at the start)
   wall(D, H, wallMat(23, 2, 1), -W / 2, H / 2, 0, Math.PI / 2);        // left
@@ -147,6 +164,7 @@ export function createRoom(container, hooks = {}) {
       const t = i / 90, ang = i * 2.399, rad = 0.12 + t * 0.7, y = -0.1 - (1 - t) * 0.65 + r() * 0.08;
       const m = new THREE.Mesh(geo, crystal); m.position.set(Math.cos(ang) * rad, y, Math.sin(ang) * rad); m.scale.set(1, 1.8 + r(), 1); g.add(m);
     }
+    g.traverse(o => { o.castShadow = false; });
     scene.add(g);
   }
 
@@ -267,25 +285,25 @@ export function createRoom(container, hooks = {}) {
     const frond = new THREE.ConeGeometry(0.16, 1.45, 5, 1, true); frond.translate(0, 0.72, 0);
     for (let i = 0; i < 9; i++) { const f = new THREE.Mesh(frond, M.leaf); f.position.y = 1.7; f.rotation.set(Math.PI / 2 - 0.45 - (i % 3) * 0.2, 0, 0); const holder = new THREE.Group(); holder.rotation.y = i * 0.7; holder.add(f); holder.position.y = 0; g.add(holder); f.scale.set(1, 1, 0.25); }
     const up = new THREE.Mesh(new THREE.CircleGeometry(0.35, 20), new THREE.MeshBasicMaterial({ color: 0xc8ff6a, transparent: true, opacity: 0.5, toneMapped: false, depthWrite: false })); up.rotation.x = -Math.PI / 2; up.position.y = 0.02; g.add(up);
-    scene.add(g); colliders.push([x - 0.4, x + 0.4, z - 0.4, z + 0.4]);
+    scene.add(g); ao(x, z, 1.2, 1.2); colliders.push([x - 0.4, x + 0.4, z - 0.4, z + 0.4]);
   };
   for (const [x, z] of [[-3.7, -5.5], [4.6, -5.5], [-8.3, -5.5], [8.3, -5.5], [-8.3, 5.5], [8.3, 5.5], [3.3, 5.5], [-3.3, 5.5], [8.3, 3.9], [-7.6, 4.2]]) plant(x, z, 1.1 + (x * 7 % 3) * 0.04);
 
   /* ----- seating ----- */
   const sofa = (len, x, z, ry) => {
     const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry;
-    box(len, 0.45, 1.0, M.leather, 0, 0.35, 0, g); box(len, 0.7, 0.28, M.leather, 0, 0.8, -0.4, g); box(0.28, 0.65, 1.0, M.leather, -len / 2 + 0.14, 0.55, 0, g); box(0.28, 0.65, 1.0, M.leather, len / 2 - 0.14, 0.55, 0, g);
-    const n = Math.round(len / 1.0); for (let i = 0; i < n; i++) box(len / n - 0.06, 0.18, 0.78, M.leather, -len / 2 + (i + 0.5) * (len / n), 0.67, 0.08, g);
-    for (const lx of [-len / 2 + 0.2, len / 2 - 0.2]) { box(0.08, 0.12, 0.8, M.gold, lx, 0.06, 0, g); }
-    const pil = [0x0f6a3a, 0xb98a2e, 0x0f6a3a, 0xb98a2e]; for (let i = 0; i < 4; i++) { const p = box(0.36, 0.36, 0.14, new THREE.MeshStandardMaterial({ color: pil[i], roughness: 0.7 }), -len / 2 + 0.7 + i * (len - 1.4) / 3, 0.88, -0.2, g); p.rotation.set(-0.2, 0, (i % 2 ? 0.3 : -0.25)); }
-    scene.add(g);
+    rbox(len, 0.45, 1.0, M.leather, 0, 0.35, 0, g); rbox(len, 0.7, 0.28, M.leather, 0, 0.8, -0.4, g); rbox(0.28, 0.65, 1.0, M.leather, -len / 2 + 0.14, 0.55, 0, g); rbox(0.28, 0.65, 1.0, M.leather, len / 2 - 0.14, 0.55, 0, g);
+    const n = Math.round(len / 1.0); for (let i = 0; i < n; i++) rbox(len / n - 0.06, 0.18, 0.78, M.leather, -len / 2 + (i + 0.5) * (len / n), 0.67, 0.08, g);
+    for (const lx of [-len / 2 + 0.2, len / 2 - 0.2]) { rbox(0.08, 0.12, 0.8, M.gold, lx, 0.06, 0, g); }
+    const pil = [0x0f6a3a, 0xb98a2e, 0x0f6a3a, 0xb98a2e]; for (let i = 0; i < 4; i++) { const p = rbox(0.36, 0.36, 0.14, new THREE.MeshStandardMaterial({ color: pil[i], roughness: 0.7 }), -len / 2 + 0.7 + i * (len - 1.4) / 3, 0.88, -0.2, g); p.rotation.set(-0.2, 0, (i % 2 ? 0.3 : -0.25)); }
+    scene.add(g); ao(x, z, len + 0.8, 1.9, ry);
     const c = Math.cos(ry), s = Math.sin(ry), hx = Math.abs(c) * len / 2 + Math.abs(s) * 0.5, hz = Math.abs(s) * len / 2 + Math.abs(c) * 0.5;
     colliders.push([x - hx, x + hx, z - hz, z + hz]);
   };
   const chair = (x, z, ry, s = 1) => {
     const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; g.scale.setScalar(s);
-    box(0.85, 0.4, 0.8, M.leather, 0, 0.36, 0, g); box(0.85, 0.75, 0.22, M.leather, 0, 0.78, -0.33, g); box(0.18, 0.5, 0.8, M.leather, -0.43, 0.56, 0, g); box(0.18, 0.5, 0.8, M.leather, 0.43, 0.56, 0, g);
-    box(0.7, 0.04, 0.7, M.gold, 0, 0.12, 0, g); scene.add(g); colliders.push([x - 0.5, x + 0.5, z - 0.5, z + 0.5]);
+    rbox(0.85, 0.4, 0.8, M.leather, 0, 0.36, 0, g); rbox(0.85, 0.75, 0.22, M.leather, 0, 0.78, -0.33, g); rbox(0.18, 0.5, 0.8, M.leather, -0.43, 0.56, 0, g); rbox(0.18, 0.5, 0.8, M.leather, 0.43, 0.56, 0, g);
+    rbox(0.7, 0.04, 0.7, M.gold, 0, 0.12, 0, g); scene.add(g); ao(x, z, 1.5, 1.5); colliders.push([x - 0.5, x + 0.5, z - 0.5, z + 0.5]);
   };
   sofa(6.2, 0, -3.9, 0);                              // main sofa under the sign
   sofa(3.4, -4.7, -2.2, Math.PI / 6);                 // angled wing
@@ -293,7 +311,7 @@ export function createRoom(container, hooks = {}) {
   chair(-2.4, -0.4, 0.5, 1.0); chair(2.4, -0.4, -0.5, 1.0);   // round armchairs in front
   // recliners facing the TV
   for (const z of [0.6, 2.6]) { const g = new THREE.Group(); g.position.set(-5.6, 0, z); g.rotation.y = -Math.PI / 2;
-    box(1.0, 0.5, 1.1, M.leather, 0, 0.4, 0, g); box(1.0, 1.05, 0.3, M.leather, 0, 0.95, -0.52, g); box(0.2, 0.5, 1.1, M.leather, -0.5, 0.6, 0, g); box(0.2, 0.5, 1.1, M.leather, 0.5, 0.6, 0, g); box(0.9, 0.1, 0.1, M.gold, 0, 0.12, 0.3, g); scene.add(g); colliders.push([-6.3, -4.8, z - 0.7, z + 0.7]); }
+    rbox(1.0, 0.5, 1.1, M.leather, 0, 0.4, 0, g); rbox(1.0, 1.05, 0.3, M.leather, 0, 0.95, -0.52, g); rbox(0.2, 0.5, 1.1, M.leather, -0.5, 0.6, 0, g); rbox(0.2, 0.5, 1.1, M.leather, 0.5, 0.6, 0, g); rbox(0.9, 0.1, 0.1, M.gold, 0, 0.12, 0.3, g); scene.add(g); ao(-5.6, z, 1.7, 1.8, -Math.PI / 2); colliders.push([-6.3, -4.8, z - 0.7, z + 0.7]); }
 
   /* ----- rug and coffee table ----- */
   {
@@ -309,7 +327,7 @@ export function createRoom(container, hooks = {}) {
     const rim = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.03, 10, 48), M.gold); rim.rotation.x = Math.PI / 2; rim.position.y = 0.5; tbl.add(rim);
     cyl(0.12, 0.2, 0.42, M.gold, 0, 0.21, 0, 16, tbl); cyl(0.5, 0.5, 0.04, M.gold, 0, 0.02, 0, 32, tbl);
     for (const [cx, cz] of [[0.3, 0.2], [-0.35, -0.2]]) { cyl(0.05, 0.05, 0.16, M.neonGold, cx, 0.58, cz, 12, tbl); }
-    scene.add(tbl); colliders.push([-1.0, 1.0, -2.0, 0.0]);
+    scene.add(tbl); ao(0, -1, 2.7, 2.7); colliders.push([-1.0, 1.0, -2.0, 0.0]);
   }
 
   /* ----- pool table with pendant lamps ----- */
@@ -321,7 +339,7 @@ export function createRoom(container, hooks = {}) {
     for (const x of [-1.3, 1.3]) for (const z of [-0.65, 0.65]) box(0.22, 0.65, 0.22, M.dark, x, 0.33, z, g);
     const balls = [0xff3030, 0xffd030, 0x30a0ff, 0xffffff, 0x101010, 0xff7030]; const r = rng(4);
     balls.forEach((c, i) => { const b = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), new THREE.MeshStandardMaterial({ color: c, roughness: 0.2 })); b.position.set(0.3 + (i % 3) * 0.11, 1.03, -0.15 + Math.floor(i / 3) * 0.12 + r() * 0.03); g.add(b); });
-    scene.add(g); colliders.push([4.0, 7.2, -1.5, 1.2]);
+    scene.add(g); ao(5.6, -0.3, 4.4, 3.0, 0.2); colliders.push([4.0, 7.2, -1.5, 1.2]);
     for (const x of [-0.8, 0.8]) { const lamp = new THREE.Group(); lamp.position.set(5.6 + x, H - 1.2, -0.3);
       cyl(0.01, 0.01, 1.4, M.dark, 0, 0.7, 0, 6, lamp); const sh = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.26, 28, 1, true), new THREE.MeshStandardMaterial({ color: 0x0a3a1c, roughness: 0.4, side: THREE.DoubleSide, emissive: 0x0a5a2a, emissiveIntensity: 0.6 })); lamp.add(sh);
       const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), M.warm); bulb.position.y = -0.08; lamp.add(bulb); scene.add(lamp); }
@@ -336,7 +354,7 @@ export function createRoom(container, hooks = {}) {
     cyl(0.12, 0.2, 0.78, M.gold, 0, 0.39, 0, 12, g); cyl(0.55, 0.55, 0.04, M.gold, 0, 0.02, 0, 28, g);
     for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5 + 0.3; const c = new THREE.Group(); c.position.set(Math.cos(a) * 1.75, 0, Math.sin(a) * 1.75); c.rotation.y = -a - Math.PI / 2;
       box(0.62, 0.12, 0.62, M.leather, 0, 0.5, 0, c); box(0.62, 0.62, 0.12, M.leather, 0, 0.88, -0.28, c); cyl(0.04, 0.04, 0.45, M.gold, 0, 0.24, 0, 8, c); cyl(0.3, 0.3, 0.03, M.gold, 0, 0.02, 0, 16, c); g.add(c); }
-    scene.add(g); colliders.push([4.5, 7.9, 1.7, 5.1]);
+    scene.add(g); ao(6.2, 3.4, 5.0, 5.0); colliders.push([4.5, 7.9, 1.7, 5.1]);
   }
 
   /* ----- ceiling fan ----- */
@@ -344,7 +362,7 @@ export function createRoom(container, hooks = {}) {
     const g = new THREE.Group(); g.position.set(-5.4, H - 0.35, -0.8);
     cyl(0.04, 0.04, 0.3, M.dark, 0, 0.17, 0, 8, g); cyl(0.14, 0.14, 0.12, M.dark, 0, 0, 0, 16, g);
     const blades = new THREE.Group(); for (let i = 0; i < 5; i++) { const b = box(1.1, 0.02, 0.2, M.dark, 0.65, -0.05, 0); const h = new THREE.Group(); h.rotation.y = i * Math.PI * 2 / 5; h.add(b); blades.add(h); }
-    g.add(blades); scene.add(g); animated.push(t => { blades.rotation.y = t * 1.6; });
+    g.add(blades); g.traverse(o => { o.castShadow = false; }); scene.add(g); animated.push(t => { blades.rotation.y = t * 1.6; });
   }
 
   /* ----- the three holograms over the coffee table ----- */
@@ -383,7 +401,8 @@ export function createRoom(container, hooks = {}) {
   }), transparent: true, depthTest: false, toneMapped: false, opacity: 0 }));
   for (const [id, text, color] of [["ice", "❄️ Honeydrippers", "#8dffe6"], ["tea", "🌴 Herbal teas", "#38ff7a"], ["shot", "⚕️ Herbal shots", "#ffd36a"]]) { const s = label(text, color); s.scale.set(1.2, 0.225, 1); s.position.y = -1.3; s.renderOrder = 10; holoItems[id].g.add(s); holoItems[id].label = s; }
 
-  addExtras({ THREE, scene, M, box, cyl, canvasTex, glow, colliders, interactive, animated, addLight: pt });
+  addExtras({ THREE, scene, M, box, rbox, cyl, canvasTex, glow, colliders, interactive, animated, addLight: pt, ao });
+  renderer.shadowMap.needsUpdate = true;
 
   /* ----- camera, input ----- */
   const clampPos = (x, z) => [Math.max(-8.2, Math.min(8.2, x)), Math.max(-5.3, Math.min(5.4, z))];
@@ -440,10 +459,14 @@ export function createRoom(container, hooks = {}) {
 
   /* ----- render loop ----- */
   const size = new THREE.Vector2();
-  const composer = new EffectComposer(renderer);
+  const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: coarse ? 2 : 4 }));
   composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), coarse ? 0.3 : 0.38, 0.5, 0.92);
   composer.addPass(bloom); composer.addPass(new OutputPass());
+  const finish = new ShaderPass({ uniforms: { tDiffuse: { value: null }, time: { value: 0 } },
+    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    fragmentShader: "uniform sampler2D tDiffuse; uniform float time; varying vec2 vUv; float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233)) + time) * 43758.5453); } void main(){ vec4 c = texture2D(tDiffuse, vUv); float v = smoothstep(0.95, 0.25, length((vUv - 0.5) * vec2(1.15, 1.0))); c.rgb *= mix(0.55, 1.0, v); c.rgb += (h(vUv * 1000.0) - 0.5) * 0.03; gl_FragColor = c; }" });
+  composer.addPass(finish);
   function resize() {
     const w = container.clientWidth; if (!w) return;
     const h = Math.round(Math.max(340, Math.min(w * (w < 700 ? 1.05 : 0.6), innerHeight * 0.74, 700)));
@@ -481,6 +504,7 @@ export function createRoom(container, hooks = {}) {
       const on = hovered === "product:" + id; h.label.material.opacity += ((on ? 1 : 0) - h.label.material.opacity) * 0.2; h.art.scale.setScalar(on ? 1.12 : 1);
     }
     for (const fn of animated) fn(t);
+    finish.uniforms.time.value = t % 10;
     composer.render();
   }
   requestAnimationFrame(frame);

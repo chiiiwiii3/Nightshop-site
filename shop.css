@@ -216,7 +216,11 @@ body.entry-open{overflow:hidden}
 .lounge-copy{position:relative;flex:0 0 auto;width:33.3333%;height:100%}
 .nsx .look:disabled{opacity:.3;cursor:default}
 
-#bath-sheet{align-items:stretch}
-#bath-sheet .sheet-card{width:min(100%,640px);max-height:100vh;border-radius:0;border-top:0}
-#bath-sheet .sheet-close{z-index:2;background:rgba(0,0,0,.6)}
-@media(min-width:760px){#bath-sheet{align-items:center}#bath-sheet .sheet-card{max-height:94vh;border-radius:18px}}
+/* ---------- gold & marble frame for every pop-up ---------- */
+.sheet .sheet-card{width:min(calc(100% - 16px),560px);max-height:calc(100vh - 24px);margin:0 0 8px;padding:10px 12px 18px;background:radial-gradient(120% 80% at 50% 0,#07130d,#020403 70%) padding-box;border:solid transparent;border-width:36px 40px 35px 40px;border-image:url(./art/frame.jpg) 75 75 65 75 / 36px 40px 35px 40px stretch;border-radius:0;box-shadow:none;filter:drop-shadow(0 0 14px rgba(56,255,122,.35)) drop-shadow(0 10px 30px #000)}
+.sheet .sheet-close{position:absolute;top:0;right:0;width:44px;height:40px;opacity:0;border:0;background:transparent;font-size:0}
+.sheet .sheet-close:focus-visible{opacity:1;outline:2px solid #ffd36a}
+.sheet-card h2{font-family:Georgia,"Times New Roman",serif;letter-spacing:2px}
+#bath-sheet .sheet-card{width:min(calc(100% - 16px),640px)}
+.bath-art{margin:-10px -12px 12px!important;border-radius:0!important}
+@media(min-width:760px){.sheet{align-items:center}.sheet .sheet-card{margin:0}}

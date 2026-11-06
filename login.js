@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-pano-4";
+const SHOP_VERSION = "nightshop-frame-5";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");

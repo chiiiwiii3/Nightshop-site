@@ -134,3 +134,11 @@ function inviteGate() {
 if (document.readyState !== "loading") inviteGate(); else addEventListener("DOMContentLoaded", inviteGate);
 
 window.nightshopPwa = { mountPanel, release, openInstall };
+
+/* the close button is painted into the corner of every pop-up frame: tapping that corner closes it */
+document.addEventListener("click", e => {
+  const card = e.target.classList && e.target.classList.contains("sheet-card") ? e.target : null;
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  if (e.clientX > r.right - 48 && e.clientY < r.top + 44) card.querySelector(".sheet-close")?.click();
+});

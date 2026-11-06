@@ -88,9 +88,9 @@ const tabsMarkup = (id, a, b) => `<div class="tabs" id="${id}"><button type="but
 
 /* ---------- the menu: three floating holograms ---------- */
 const ITEMS = [
-  { id: "ice",  icon: "❄️", name: "Honeydrippers", detail: "Frozen Kool-Aid ice cups with candy and/or fruit", kind: "amount", color: "mint",  spot: { l: 44.2, t: 50, w: 7, h: 16 } },
-  { id: "tea",  icon: "🌴", name: "Herbal teas",   detail: "Small or Big · choose a bundle",                    kind: "tea",    color: "green", spot: { l: 49.0, t: 47.5, w: 7, h: 16 } },
-  { id: "shot", icon: "⚕️", name: "Herbal shots",  detail: "Small or Medium · priced per shot glass",           kind: "shot",   color: "gold",  spot: { l: 53.8, t: 50, w: 7, h: 16 } }
+  { id: "ice",  icon: "❄️", name: "Honeydrippers", detail: "Frozen Kool-Aid ice cups with candy and/or fruit", kind: "amount", color: "mint",  spot: { l: 7.6, t: 29.5, w: 7, h: 16 } },
+  { id: "tea",  icon: "🌴", name: "Herbal teas",   detail: "Small or Big · choose a bundle",                    kind: "tea",    color: "green", spot: { l: 16.2, t: 28, w: 7, h: 16 } },
+  { id: "shot", icon: "⚕️", name: "Herbal shots",  detail: "Small or Medium · priced per shot glass",           kind: "shot",   color: "gold",  spot: { l: 24.8, t: 29, w: 7, h: 16 } }
 ];
 const COLORS = { mint: "#8dffe6", green: "#38ff7a", gold: "#ffd36a" };
 
@@ -126,19 +126,19 @@ root.innerHTML = `
     <div class="lounge-viewport" id="lounge-viewport">
       <div class="lounge-world" id="lounge-world">
         <div class="lounge-copy">
-          <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign" draggable="false">
+          <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign, a bar and green velvet seating" draggable="false">
           ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
-          <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:33.1%;top:36.5%;width:5.1%;height:22.5%"><span class="spot-ring"></span></button>
+          <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:68.7%;top:27.8%;width:6.8%;height:22.6%"><span class="spot-ring"></span></button>
         </div>
         <div class="lounge-copy">
-          <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign" draggable="false">
+          <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign, a bar and green velvet seating" draggable="false">
           ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
-          <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:33.1%;top:36.5%;width:5.1%;height:22.5%"><span class="spot-ring"></span></button>
+          <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:68.7%;top:27.8%;width:6.8%;height:22.6%"><span class="spot-ring"></span></button>
         </div>
         <div class="lounge-copy">
-          <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign" draggable="false">
+          <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign, a bar and green velvet seating" draggable="false">
           ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
-          <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:33.1%;top:36.5%;width:5.1%;height:22.5%"><span class="spot-ring"></span></button>
+          <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:68.7%;top:27.8%;width:6.8%;height:22.6%"><span class="spot-ring"></span></button>
         </div>
       </div>
     </div>
@@ -220,7 +220,7 @@ root.innerHTML = `
 try { window.nightshopPwa?.mountPanel($("#app-panel"), { supabase, toast }); } catch (e) { console.error("App panel failed:", e); }
 
 /* ---------- look around the lounge: drag or swipe, or use the arrows. It stops at each end of the panorama ---------- */
-const RATIO = 1584 / 672;
+const RATIO = 1672 / 941;
 const viewport = $("#lounge-viewport");
 const world = $("#lounge-world");
 let pan = 0, maxPan = 0, picW = 0, laidOut = false, dragged = false, spinning = null;
@@ -244,7 +244,7 @@ function layout() {
   world.style.setProperty("--wu", (width / 100) + "px");     // 1% of the picture's width, so the holograms scale with the scene
   picW = width;
   // first view: look at the coffee table and the holograms
-  setPan(laidOut ? pan * (width / before) : 0.523 * width - vw / 2);
+  setPan(laidOut ? pan * (width / before) : 0.30 * width - vw / 2);
   laidOut = true;
 }
 layout();

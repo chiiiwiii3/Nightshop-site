@@ -142,7 +142,6 @@ root.innerHTML = `
         </div>
       </div>
     </div>
-    <div class="room3d" id="room3d" hidden></div>
     <button class="look look-left" id="look-left" type="button" aria-label="Look left">‹</button>
     <button class="look look-right" id="look-right" type="button" aria-label="Look right">›</button>
     <p class="lounge-hint">DRAG TO LOOK AROUND · TAP A HOLOGRAM</p>
@@ -206,9 +205,9 @@ root.innerHTML = `
   <div class="sheet" id="bath-sheet" hidden>
     <div class="sheet-card" style="--c:#ffd98a" role="dialog" aria-modal="true" aria-labelledby="bath-title">
       <button type="button" class="sheet-close" id="bath-close" aria-label="Close">×</button>
-      <h2 id="bath-title">BATHROOM WINDOW</h2>
-      <p class="muted small">Someone is listening behind the glass. Type a message and wait for the reply.</p>
-      <div class="bath-art" aria-hidden="true"></div>
+      <div class="bath-art" role="img" aria-label="The bathroom: black marble and gold, a stall door ajar and a shadowy figure in a hat watching from inside"></div>
+      <h2 id="bath-title">THE BATHROOM</h2>
+      <p class="muted small">Someone is listening from the stall. Type a message and wait for the reply.</p>
       <form id="message-form" class="msg-bar"><input id="member-message" name="message" maxlength="1000" placeholder="Tap to message…" autocomplete="off" required><button type="submit" aria-label="Send message">➤</button></form>
       <p id="message-note" aria-live="polite" class="small"></p>
       <button type="button" class="ghost" id="clear-chat" hidden>🗑 Delete my conversation with the shadow</button>
@@ -296,9 +295,8 @@ $("#look-right").addEventListener("click", () => spinTo(pan + viewport.clientWid
 window.__spin = { get pan() { return pan; }, set: setPan };   // used by the tests
 
 /* ---------- shop open (blue lights) / closed (red lights) ---------- */
-let shopOpen = false, statusKnown = false, room3d = null;
+let shopOpen = false, statusKnown = false;
 function applyTheme() {
-  room3d?.setOpen(shopOpen);
   document.body.classList.toggle("theme-open", shopOpen);
   document.body.classList.toggle("theme-closed", !shopOpen);
   const pill = $("#shop-pill");
@@ -374,26 +372,6 @@ root.addEventListener("click", event => {
 const bathSheet = $("#bath-sheet");
 const closeBath = () => { bathSheet.hidden = true; };
 root.addEventListener("click", event => { if (event.target.closest("[data-bath]")) { if (dragged) return; bathSheet.hidden = false; } });
-/* the real 3D room; if the phone can't do WebGL the flat panorama above stays as the fallback */
-(async () => {
-  try {
-    if (!new URLSearchParams(location.search).has("3d")) return;   // the picture panorama is the lounge; add ?3d to the address to preview the 3D room
-    const gl = document.createElement("canvas").getContext("webgl2") || document.createElement("canvas").getContext("webgl");
-    if (!gl) throw new Error("no WebGL");
-    const { createRoom } = await import("./room3d.js?v=" + (new URL(import.meta.url).searchParams.get("v") || "1"));
-    const box3d = $("#room3d");
-    box3d.hidden = false;
-    room3d = createRoom(box3d, {
-      onProduct: id => { const item = ITEMS.find(entry => entry.id === id); if (item) openOrder(item); },
-      onBath: () => { bathSheet.hidden = false; }
-    });
-    room3d.setOpen(shopOpen);
-    viewport.hidden = true;
-    $("#look-left").hidden = true; $("#look-right").hidden = true;
-    $(".lounge-hint").textContent = "DRAG TO LOOK AROUND · TAP THE FLOOR TO WALK · TAP A HOLOGRAM";
-    window.__room3d = room3d;
-  } catch (e) { console.warn("3D room unavailable, using the flat view:", e); $("#room3d").hidden = true; }
-})();
 $("#bath-close").addEventListener("click", closeBath);
 bathSheet.addEventListener("click", event => { if (event.target.id === "bath-sheet") closeBath(); });
 document.addEventListener("keydown", event => { if (event.key === "Escape") { closeBath(); closeOrder(); closeFulfil(); closeThread(); } });

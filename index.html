@@ -63,8 +63,8 @@ footer{color:#777f91}
 .hotspot{position:absolute;z-index:3;padding:0;margin:0;border:0;border-radius:6px;background:transparent;box-shadow:none;text-transform:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .hotspot:hover{filter:none;box-shadow:none;background:rgba(255,226,170,.07)}
 .hotspot:focus-visible{outline:2px solid #43cfff;outline-offset:2px}
-.door-hotspot{left:32%;top:28%;width:25%;height:51%}
-.bath-hotspot{left:81%;top:32%;width:11%;height:48%}
+.door-hotspot{left:46%;top:44%;width:14%;height:38%}
+.bath-hotspot{display:none}
 .door-hotspot.door-opening{background:rgba(255,226,170,.2);transition:background .45s}
 .tap-hint{position:absolute;z-index:2;left:0;right:0;bottom:2.2%;margin:0;text-align:center;font:clamp(8px,1.5vw,11px) Arial,sans-serif;letter-spacing:3px;color:#ffd9a0;text-shadow:0 0 10px #000,0 0 16px #ff365f88;pointer-events:none}
 .window-message{position:absolute;z-index:8;right:2%;bottom:4%;width:min(320px,94%);padding:14px 16px;background:linear-gradient(rgba(5,9,22,.78),rgba(5,9,22,.92)),url(./art/bathroom.jpg) center/cover;border:1px solid #4bcfff;box-shadow:0 0 28px #35bfff66;color:#e8f7ff;text-align:left;backdrop-filter:blur(12px)}
@@ -87,7 +87,7 @@ footer{color:#777f91}
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
-<link rel="stylesheet" href="./shop.css?v=nightshop-bar-6">
+<link rel="stylesheet" href="./shop.css?v=nightshop-sign-7">
 </head>
 <body>
 <header>
@@ -99,7 +99,7 @@ footer{color:#777f91}
  
 <section id="street-scene" aria-label="Lu’s Lounge exterior">
  <div class="exterior-frame">
-  <img id="exterior-artwork" src="./exterior.jpg" width="1672" height="941" alt="Lu’s Lounge at night: a neon crown sign over black double doors with a red carpet, and a restroom door on the right">
+  <img id="exterior-artwork" src="./exterior.jpg" width="1672" height="941" alt="Lu’s Lounge at night: a run-down brick building under a full moon with a neon crown sign over a dark open doorway. The crown is blue when the lounge is open and red when it is closed.">
   <span class="sign-glow" id="sign-glow" aria-hidden="true"></span>
   <button type="button" id="street-door" class="hotspot door-hotspot" aria-label="Enter Lu’s Lounge"></button>
   <button type="button" id="bathroom-door" class="hotspot bath-hotspot" aria-label="Open the private question door"></button>
@@ -168,7 +168,7 @@ document.querySelector("#close-window")?.addEventListener("click", () => {
   if (windowMessage) windowMessage.hidden = true;
 });
 </script>
-<script type="module" src="./pwa.js?v=nightshop-bar-6"></script>
-<script type="module" src="./login.js?v=nightshop-bar-6"></script>
+<script type="module" src="./pwa.js?v=nightshop-sign-7"></script>
+<script type="module" src="./login.js?v=nightshop-sign-7"></script>
 </body>
 </html>

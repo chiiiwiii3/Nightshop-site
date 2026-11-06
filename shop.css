@@ -199,9 +199,7 @@ body.entry-open{overflow:hidden}
 .sheet-holo span{font-size:92px;line-height:1.1;filter:drop-shadow(0 0 16px var(--c)) drop-shadow(0 0 4px #fff);animation:holo-float 3.4s ease-in-out infinite}
 .sheet-holo{align-items:center}
 /* outside only: the crown sign turns blue when the shop is open, stays red when closed */
-.exterior-frame .sign-glow{position:absolute;left:33%;top:1%;width:23%;height:23%;pointer-events:none;opacity:0;transition:opacity .6s;border-radius:50%}
-.door-open .sign-glow{opacity:1;mix-blend-mode:color;background:radial-gradient(ellipse at 50% 50%,#2b9dff 0,#2b9dffcc 48%,transparent 72%)}
-.door-closed .sign-glow{opacity:.7;mix-blend-mode:screen;background:radial-gradient(ellipse at 50% 50%,#ff2a4a66 0,transparent 70%)}
+.exterior-frame .sign-glow{display:none}
 
 .nsx .spot .spot-tag{opacity:0;transition:opacity .2s;top:100%;z-index:5}
 .nsx .spot:hover .spot-tag,.nsx .spot:focus-visible .spot-tag{opacity:1}

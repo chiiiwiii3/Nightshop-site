@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-bar-6";
+const SHOP_VERSION = "nightshop-sign-7";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
@@ -18,7 +18,6 @@ function loadPublishedExterior() {
   probe.onload = () => { image.src = url; };
   probe.src = url; // a 404 simply keeps the built-in picture
 }
-loadPublishedExterior();
 
 // The bathroom door: a private question to the owner (members only).
 const questionForm = document.querySelector("#question-form");
@@ -48,6 +47,14 @@ function showClosedDoor(closed, message) {
   const lock = document.querySelector("#entry-lock");
   const scene = document.querySelector("#street-scene");
   if (scene) { scene.classList.toggle("door-closed", Boolean(closed)); scene.classList.toggle("door-open", !closed); }
+  // the neon crown: blue when the lounge is open, red when it is closed
+  const picture = document.querySelector("#exterior-artwork");
+  if (picture) {
+    const next = closed ? "./exterior-closed.jpg" : "./exterior-open.jpg";
+    const probe = new Image();
+    probe.onload = () => { picture.src = next; };
+    probe.src = next;
+  }
   if (hint) hint.textContent = closed ? "🔒 CLOSED · MEMBERS CAN STILL SIGN IN" : "TAP THE DOORS TO ENTER";
   if (lock) {
     lock.hidden = !closed;

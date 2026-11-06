@@ -377,6 +377,7 @@ root.addEventListener("click", event => { if (event.target.closest("[data-bath]"
 /* the real 3D room; if the phone can't do WebGL the flat panorama above stays as the fallback */
 (async () => {
   try {
+    if (!new URLSearchParams(location.search).has("3d")) return;   // the picture panorama is the lounge; add ?3d to the address to preview the 3D room
     const gl = document.createElement("canvas").getContext("webgl2") || document.createElement("canvas").getContext("webgl");
     if (!gl) throw new Error("no WebGL");
     const { createRoom } = await import("./room3d.js?v=" + (new URL(import.meta.url).searchParams.get("v") || "1"));

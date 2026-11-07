@@ -419,3 +419,11 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
   .entry #login-door button.wide,.entry #login-door #login-button{font-size:17px;padding:11px 0;border-radius:12px}
   .entry #login-door #strike-note,.entry #login-door #status-note{font-size:12px;margin:6px 0 0}
 }
+
+/* ---------- hallway on tall screens: the tall picture fills the screen; the login card is see-through over the floor ---------- */
+@media (max-aspect-ratio:1/1){
+  .entry:before{display:none}
+  .entry .hall-stage{position:absolute;inset:0;left:0;top:0;width:auto;height:auto;transform:none;background:url(./art/hallway-tall.jpg) center/cover no-repeat}
+  .entry #login-door{top:auto;bottom:max(20px,env(safe-area-inset-bottom));max-height:none;background:rgba(2,12,7,.42);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+  .entry #login-door input{background:rgba(0,0,0,.4)}
+}

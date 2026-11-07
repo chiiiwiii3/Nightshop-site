@@ -120,7 +120,6 @@ const ownerPanes = isOwner ? `<div class="pf-pane owner-pane" data-pane="orders"
 root.innerHTML = `
 <div class="nsx">
   <header class="nsx-top">
-    <div class="nsx-brand"><span class="nsx-crest">♛</span><div><h1>LU’S LOUNGE</h1><p>Welcome in, ${safe(profile.display_name || "member")}</p></div></div>
     <div class="nsx-actions"><button id="open-profile" class="avatar-btn" type="button" aria-label="Open your profile"></button><span id="shop-pill" class="pill">Checking…</span><button id="sign-out" class="ghost" type="button">Sign out</button></div>
   </header>
 
@@ -213,9 +212,8 @@ root.innerHTML = `
     </div>
   </div>
   <div class="sheet profile-sheet" id="profile-sheet" hidden>
-    <div class="sheet-card pf-card" role="dialog" aria-modal="true" aria-labelledby="pf-title">
+    <div class="sheet-card pf-card" role="dialog" aria-modal="true" aria-label="Your profile">
       <button type="button" class="sheet-close" id="profile-close" aria-label="Close profile">✕</button>
-      <div class="pf-plaque"><h2 id="pf-title">Profile</h2></div>
       ${ownerTabsMarkup}
       <div class="pf-pane" data-pane="me"><div class="pf-grid">
         <div class="pf-left">

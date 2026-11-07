@@ -333,3 +333,15 @@ body.entry-open{overflow:hidden}
 .entry #login-door button.wide,.entry #login-door #login-button{width:100%;border:2px solid #e9b93a;border-radius:14px;background:linear-gradient(#201a08,#080602);color:#f6c744;font:italic 700 19px Georgia,serif;text-transform:none;letter-spacing:0;box-shadow:inset 0 0 10px #000}
 .entry #login-door #status-note,.entry #login-door #strike-note{color:#cfe8d6}
 #thread-sheet{z-index:120}
+/* full-screen lounge: the picture fills the whole screen, the few controls float on top of it */
+.nsx{width:100%;margin:0;padding:0}
+.nsx-top{position:fixed;top:0;left:0;right:0;z-index:30;justify-content:flex-end;flex-wrap:nowrap;padding:max(10px,env(safe-area-inset-top)) 12px 10px;pointer-events:none;background:linear-gradient(#000a,transparent)}
+.nsx-top>*{pointer-events:auto}
+.nsx .lounge{margin:0;width:100%;height:100vh;height:100dvh;border:0;border-radius:0;box-shadow:none}
+.nsx .lounge-hint{bottom:max(10px,env(safe-area-inset-bottom))}
+body #shop-app{width:100%;max-width:none;margin:0;padding:0}
+body:has(#shop-app .nsx) main{margin:0}
+body:has(#shop-app .nsx){overflow-x:hidden}
+body:has(#shop-app .nsx) footer{display:none}
+.sheet .sheet-card.pf-card{padding-top:20px}
+.pf-card .pf-top{margin-right:52px}

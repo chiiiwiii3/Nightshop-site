@@ -94,17 +94,17 @@ const ITEMS = [
 ];
 const COLORS = { mint: "#8dffe6", green: "#38ff7a", gold: "#ffd36a" };
 
-const ownerMarkup = isOwner ? `
-  <section class="panel owner-panel" id="owner-panel">
-    <h2>OWNER CONTROLS</h2>
-    <button id="toggle-shop" class="lights-btn" type="button">💡 LIGHTS</button>
-    <p class="muted small">Blue lights = shop open. Red lights = shop closed. Members see the change within seconds.</p>
+const ownerOrdersMarkup = isOwner ? `
     ${tabsMarkup("owner-tabs", "Active", "History", "💵 Balances")}
     <h3 id="owner-orders-title">INCOMING ORDERS</h3>
     <div id="owner-orders" class="stack">Loading…</div>
     <h3 id="owner-messages-title">CUSTOMER MESSAGES</h3>
     <div id="owner-messages" class="stack">Loading…</div>
-    <div id="owner-balances" hidden></div>
+    <div id="owner-balances" hidden></div>` : "";
+const ownerControlsMarkup = isOwner ? `
+    <h3>SHOP LIGHTS</h3>
+    <button id="toggle-shop" class="lights-btn" type="button">💡 LIGHTS</button>
+    <p class="muted small">Blue lights = shop open. Red lights = shop closed. Members see the change within seconds.</p>
     <h3>INVITE MEMBERS</h3>
     <p class="muted small">Show this to someone and have them scan it with their camera, or tap Share. It opens an install screen first, so they get the app on their Home Screen.</p>
     <div class="invite-box"><img id="invite-qr" src="./icons/invite-qr.svg" alt="Scan to join Lu’s Lounge" width="200" height="200"></div>
@@ -113,8 +113,9 @@ const ownerMarkup = isOwner ? `
     <h3>EXTERIOR ARTWORK</h3>
     <p class="muted small">Replace the storefront picture from your phone Gallery. JPG, PNG, or WebP · up to 15 MB.</p>
     <input id="exterior-upload" type="file" accept="image/jpeg,image/png,image/webp">
-    <p id="exterior-upload-status" aria-live="polite"></p>
-  </section>` : "";
+    <p id="exterior-upload-status" aria-live="polite"></p>` : "";
+const ownerTabsMarkup = isOwner ? '<div class="tabs pf-top" id="pf-top"><button type="button" data-pane="me" class="on">👤 Profile</button><button type="button" data-pane="orders">🧾 Orders</button><button type="button" data-pane="controls">⚙ Controls</button></div>' : "";
+const ownerPanes = isOwner ? `<div class="pf-pane owner-pane" data-pane="orders" hidden>${ownerOrdersMarkup}</div><div class="pf-pane owner-pane" data-pane="controls" hidden>${ownerControlsMarkup}</div>` : "";
 
 root.innerHTML = `
 <div class="nsx">
@@ -159,7 +160,6 @@ root.innerHTML = `
   </section>
 
 
-  ${ownerMarkup}
 
   <div class="sheet" id="order-sheet" hidden>
     <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="order-title">
@@ -221,7 +221,8 @@ root.innerHTML = `
     <div class="sheet-card pf-card" role="dialog" aria-modal="true" aria-labelledby="pf-title">
       <button type="button" class="sheet-close" id="profile-close" aria-label="Close profile">✕</button>
       <div class="pf-plaque"><h2 id="pf-title">Profile</h2></div>
-      <div class="pf-grid">
+      ${ownerTabsMarkup}
+      <div class="pf-pane" data-pane="me"><div class="pf-grid">
         <div class="pf-left">
           <section class="pf-box pf-me">
             <div class="pf-avatar" id="pf-avatar"></div>
@@ -273,7 +274,8 @@ root.innerHTML = `
             </div>
           </section>
         </div>
-      </div>
+      </div></div>
+      ${ownerPanes}
     </div>
   </div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
@@ -644,14 +646,20 @@ function renderProfile() {
   $("#pf-pin-state").textContent = hasPin ? "(On · tap to change)" : "(For phone security)";
   $("#pf-pin-form").elements.cur.hidden = !hasPin; $("#pf-pin-form").elements.cur.required = hasPin; $("#pf-pin-off").hidden = !hasPin;
 }
-function openProfile() {
+function setPfPane(name) {
+  $$(".pf-pane").forEach(p => { p.hidden = p.dataset.pane !== name; });
+  $$("#pf-top [data-pane]").forEach(b => b.classList.toggle("on", b.dataset.pane === name));
+}
+function openProfile(pane = "me") {
   Promise.all([loadOrders(), loadMessages(), loadLedger()]).finally(renderProfile);
   renderProfile();
   Object.values(SUBS).forEach(sel => { $(sel).hidden = true; });
   if (!isOwner) $("#pf-msg").hidden = false;               // the conversations are open as soon as the profile opens
+  setPfPane(isOwner ? pane : "me");
   profileSheet.hidden = false;
 }
-$("#open-profile").addEventListener("click", openProfile);
+$("#open-profile").addEventListener("click", () => openProfile());
+$("#pf-top")?.addEventListener("click", event => { const b = event.target.closest("[data-pane]"); if (b) setPfPane(b.dataset.pane); });
 $("#profile-close").addEventListener("click", closeProfile);
 $("#pf-close2").addEventListener("click", closeProfile);
 profileSheet.addEventListener("click", event => { if (event.target.id === "profile-sheet") closeProfile(); });
@@ -991,6 +999,8 @@ if (isOwner) {
     const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at").order("created_at", { ascending: false }).limit(100);
     if (error) { $("#owner-orders").textContent = "Could not load orders."; return; }
     ownerOrders = data || [];
+    const waiting = ownerOrders.some(o => cls(o.status) === "pending" && !isDone(o, threadFor(o.id, ownerMsgs, o.customer_id)));
+    $$("#open-profile, .spot-profile").forEach(el => el.classList.toggle("has-new", waiting));   // a dot on the profile buttons: something needs you
     await learnNames(ownerOrders.map(o => o.customer_id));
     renderOwnerOrders();
     ownerOrders.forEach(o => {
@@ -1083,11 +1093,13 @@ if (isOwner) {
     }).join("") || (ownerTab === "history" ? "No old messages yet." : "No messages."));
   }
   ownerShow.order = id => {
+    openProfile("orders");
     const row = ownerRows().find(r => String(r.o.id) === String(id));
     setOwnerTab(row && row.finished ? "history" : "active");
     setTimeout(() => flash(orderCard(id)), 100);
   };
   ownerShow.message = id => {
+    openProfile("orders");
     const m = ownerMsgs.find(x => String(x.id) === String(id));
     setOwnerTab(m && hasDone(m) ? "history" : "active");
     setTimeout(() => flash($('#owner-messages [data-msg="' + id + '"]')), 100);

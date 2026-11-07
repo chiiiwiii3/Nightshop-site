@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-hall-25";
+const SHOP_VERSION = "nightshop-hall-27";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
@@ -19,25 +19,21 @@ function loadPublishedExterior() {
   probe.src = url; // a 404 simply keeps the built-in picture
 }
 
-// The bathroom door: a private question to the owner (members only).
+// The shadowman in the outside window: anyone (even locked out) can leave the owner a note.
 const questionForm = document.querySelector("#question-form");
 questionForm?.addEventListener("submit", async event => {
   event.preventDefault();
   const status = document.querySelector("#question-status");
-  const text = questionForm.elements.message.value.trim();
-  if (!text) return;
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    status.textContent = "Sign in through the front door first, then send your question.";
-    return;
-  }
-  const { error } = await supabase.from("messages").insert({ customer_id: session.user.id, message: text });
+  const f = questionForm.elements, submit = questionForm.querySelector("button[type=submit]");
+  submit.disabled = true; status.textContent = "Sending…";
+  const { error } = await supabase.rpc("send_help_request", { p_name: f.name.value, p_contact: f.contact.value, p_message: f.message.value });
+  submit.disabled = false;
   if (error) {
-    console.error("Private question failed:", error);
-    status.textContent = "Message could not be sent.";
+    console.error("Help request failed:", error);
+    status.textContent = /too many|fill in|too long/i.test(error.message || "") ? error.message : "Could not send that right now. Please try again later.";
     return;
   }
-  status.textContent = "Sent privately.";
+  status.textContent = "Sent. The owner will get back to you.";
   questionForm.reset();
 });
 

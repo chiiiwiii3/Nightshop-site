@@ -1,5 +1,5 @@
 /* Lu’s Lounge service worker: makes the app installable, loads fast, and shows lock-screen alerts. */
-const CACHE = "nightshop-shell-32";
+const CACHE = "nightshop-shell-34";
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", event => {
   event.waitUntil((async () => {

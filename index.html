@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="help-off" lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -69,7 +69,7 @@ footer{color:#777f91}
 .tap-hint{position:absolute;z-index:2;left:0;right:0;bottom:2.2%;margin:0;text-align:center;font:clamp(8px,1.5vw,11px) Arial,sans-serif;letter-spacing:3px;color:#ffd9a0;text-shadow:0 0 10px #000,0 0 16px #ff365f88;pointer-events:none}
 .window-message{position:absolute;z-index:8;right:2%;bottom:4%;width:min(320px,94%);padding:14px 16px;background:linear-gradient(rgba(5,9,22,.78),rgba(5,9,22,.92)),url(./art/bathroom.jpg) center/cover;border:1px solid #4bcfff;box-shadow:0 0 28px #35bfff66;color:#e8f7ff;text-align:left;backdrop-filter:blur(12px)}
 .window-message b{color:#9be5ff;letter-spacing:2px;font:11px Arial}
-.window-message textarea{margin:8px 0;font-size:14px}
+.window-message textarea,.window-message input{margin:6px 0;font-size:16px;width:100%;box-sizing:border-box}
 .window-message form button{width:100%}
 .window-message #close-window{float:right;padding:3px 9px}
 #question-status{font:12px Arial;min-height:16px;margin:6px 0 0}
@@ -96,7 +96,7 @@ main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
-<link rel="stylesheet" href="./shop.css?v=nightshop-hall-25">
+<link rel="stylesheet" href="./shop.css?v=nightshop-hall-27">
 </head>
 <body>
 <header>
@@ -113,15 +113,18 @@ main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:
   <img id="exterior-tall" class="exterior-tall" src="./art/exterior-tall.jpg" width="852" height="1846" alt="Lu’s Lounge at night: a run-down brick building under a full moon with a neon crown sign over a boarded doorway. The crown is blue when the lounge is open and red when it is closed.">
   <span class="sign-glow" id="sign-glow" aria-hidden="true"></span>
   <button type="button" id="street-door" class="hotspot door-hotspot" aria-label="Enter Lu’s Lounge"></button>
-  <button type="button" id="bathroom-door" class="hotspot bath-hotspot" aria-label="Open the private question door"></button>
+  <button type="button" id="bathroom-door" class="hotspot bath-hotspot" aria-label="Ask the shadowman for help"></button>
  </div>
   <p class="tap-hint" id="tap-hint">TAP THE DOORS TO ENTER</p>
  <div class="window-wrap">
   <div class="window-message" id="window-message" hidden>
    <button type="button" id="close-window" aria-label="Close question panel">×</button>
-   <b>PRIVATE QUESTION</b>
+   <b>NEED HELP?</b>
+   <p class="muted small">Locked out or have a question? Leave a note for the owner and say how to reach you.</p>
    <form id="question-form">
-    <textarea name="message" rows="3" maxlength="1000" placeholder="Ask the owner a private question…" required></textarea>
+    <input name="name" maxlength="80" placeholder="Your name" autocomplete="name" required>
+    <input name="contact" maxlength="120" placeholder="Phone or text number" autocomplete="tel" required>
+    <textarea name="message" rows="3" maxlength="1000" placeholder="What do you need?" required></textarea>
     <button type="submit">SEND</button>
    </form>
    <p id="question-status" class="muted" aria-live="polite"></p>
@@ -183,7 +186,7 @@ document.querySelector("#close-window")?.addEventListener("click", () => {
   if (windowMessage) windowMessage.hidden = true;
 });
 </script>
-<script type="module" src="./pwa.js?v=nightshop-hall-25"></script>
-<script type="module" src="./login.js?v=nightshop-hall-25"></script>
+<script type="module" src="./pwa.js?v=nightshop-hall-27"></script>
+<script type="module" src="./login.js?v=nightshop-hall-27"></script>
 </body>
 </html>

@@ -100,6 +100,8 @@ const ownerOrdersMarkup = isOwner ? `
     <div id="owner-orders" class="stack">Loading…</div>
     <h3 id="owner-messages-title">CUSTOMER MESSAGES</h3>
     <div id="owner-messages" class="stack">Loading…</div>
+    <h3 id="owner-help-title" hidden>HELP REQUESTS · FROM OUTSIDE</h3>
+    <div id="owner-help" class="stack" hidden></div>
     <div id="owner-balances" hidden></div>` : "";
 const ownerControlsMarkup = isOwner ? `
     <h3>SHOP LIGHTS</h3>
@@ -874,7 +876,7 @@ $("#sign-out").addEventListener("click", async () => {
 });
 
 /* ---------- owner tools ---------- */
-let loadOwnerOrders = async () => {}, loadOwnerMessages = async () => {};
+let loadOwnerOrders = async () => {}, loadOwnerMessages = async () => {}, loadHelp = async () => {};
 const ownerShow = { order() {}, message() {} };
 if (isOwner) {
   const names = async ids => {
@@ -977,6 +979,7 @@ if (isOwner) {
     $$("#owner-tabs [data-tab]").forEach(btn => btn.classList.toggle("on", btn.dataset.tab === tab));
     const onBalances = tab === "balances";
     ["#owner-orders-title", "#owner-orders", "#owner-messages-title", "#owner-messages"].forEach(sel => { $(sel).hidden = onBalances; });
+    ownerHelpRender();
     $("#owner-balances").hidden = !onBalances;
     if (onBalances) { loadBalances(); return; }
     $("#owner-orders-title").textContent = tab === "history" ? "PAST ORDERS" : "INCOMING ORDERS";
@@ -1003,11 +1006,33 @@ if (isOwner) {
   }
   const orderCard = id => $('#owner-orders [data-order-card="' + id + '"]');
 
+  /* notes left through the shadowman window outside (people locked out or with questions) */
+  let helpRows = [];
+  function ownerHelpRender() {
+    const show = helpRows.length > 0 && ownerTab !== "balances";
+    $("#owner-help-title").hidden = !show; $("#owner-help").hidden = !show;
+    $("#owner-help").innerHTML = helpRows.map(r => `<div class="row-card"><div><b>${safe(r.name)}</b> · <small>${safe(r.contact)}</small><small>${safe(when(r.created_at))}</small><div class="reply">${safe(r.message)}</div></div><div class="decide"><button type="button" class="d-done" data-help-del="${safe(r.id)}">Done</button></div></div>`).join("");
+  }
+  loadHelp = async () => {
+    const { data, error } = await supabase.from("help_requests").select("id,name,contact,message,created_at").order("created_at", { ascending: false }).limit(50);
+    if (error) return;                                        // the table may not be set up yet: stay quiet
+    helpRows = data || [];
+    ownerHelpRender();
+    if (helpRows.length) $$("#open-profile, .spot-profile").forEach(el => el.classList.add("has-new"));
+  };
+  $("#owner-help").addEventListener("click", async event => {
+    const btn = event.target.closest("[data-help-del]"); if (!btn) return;
+    btn.disabled = true;
+    const { error } = await supabase.from("help_requests").delete().eq("id", btn.dataset.helpDel);
+    if (error) { btn.disabled = false; return; }
+    helpRows = helpRows.filter(r => String(r.id) !== btn.dataset.helpDel); ownerHelpRender();
+  });
+
   loadOwnerOrders = async () => {
     const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at").order("created_at", { ascending: false }).limit(100);
     if (error) { $("#owner-orders").textContent = "Could not load orders."; return; }
     ownerOrders = data || [];
-    const waiting = ownerOrders.some(o => cls(o.status) === "pending" && !isDone(o, threadFor(o.id, ownerMsgs, o.customer_id)));
+    const waiting = helpRows.length > 0 || ownerOrders.some(o => cls(o.status) === "pending" && !isDone(o, threadFor(o.id, ownerMsgs, o.customer_id)));
     $$("#open-profile, .spot-profile").forEach(el => el.classList.toggle("has-new", waiting));   // a dot on the profile buttons: something needs you
     await learnNames(ownerOrders.map(o => o.customer_id));
     renderOwnerOrders();
@@ -1224,10 +1249,10 @@ function loadPainting() {
 loadPainting();
 
 /* ---------- first load, then check for news every 15 seconds ---------- */
-await Promise.all([refreshStatus(), loadOrders(), loadMessages(), loadOwnerOrders(), loadOwnerMessages()]);
+await Promise.all([refreshStatus(), loadOrders(), loadMessages(), loadOwnerOrders(), loadOwnerMessages(), loadHelp()]);
 const poll = () => {
   if (document.hidden) return;
-  Promise.allSettled([refreshStatus(), loadOrders(), loadMessages(), loadOwnerOrders(), loadOwnerMessages()]);
+  Promise.allSettled([refreshStatus(), loadOrders(), loadMessages(), loadOwnerOrders(), loadOwnerMessages(), loadHelp()]);
 };
 setInterval(poll, 15000);
 document.addEventListener("visibilitychange", poll);

@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-hall-29";
+const SHOP_VERSION = "nightshop-hall-30";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
@@ -100,6 +100,10 @@ async function checkDoor() {
 }
 checkDoor();
 window.addEventListener("nightshop-entry-open", checkDoor);
+// keep the outside lights true while the app sits open: re-check every few seconds and whenever the app comes back to the screen
+setInterval(() => { if (!document.hidden) checkDoor(); }, 8000);
+for (const ev of ["visibilitychange", "focus", "pageshow", "online"]) window.addEventListener(ev, () => { if (!document.hidden) checkDoor(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkDoor(); });
 
 let shopAttempts = 0;
 async function enterShop() {

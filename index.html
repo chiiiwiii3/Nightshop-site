@@ -80,7 +80,7 @@ body>header{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0
 body>header .crest{font-size:30px}body>header h1{margin:2px 0;font-size:clamp(20px,5vw,32px)}
 main{width:100%;max-width:none;margin:0 0 30px}
 main #street-scene{max-width:none;height:100vh;height:100svh;margin:0;border:0;box-shadow:none}
-main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:max(100vw,calc(100svh * 1672 / 941));height:max(100svh,calc(100vw * 941 / 1672));transform:translate(-50%,-50%)}
+main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:min(100vw,calc(100svh * 1672 / 941));height:min(100svh,calc(100vw * 941 / 1672));transform:translate(-50%,-50%)}
 #street-scene .tap-hint{position:absolute;opacity:0;pointer-events:none}
 #street-scene .window-message{position:absolute;right:2%;bottom:8%}
 #shop-app{width:min(100% - 20px,1100px);margin:0 auto}
@@ -96,7 +96,7 @@ main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
-<link rel="stylesheet" href="./shop.css?v=nightshop-hall-19">
+<link rel="stylesheet" href="./shop.css?v=nightshop-hall-20">
 </head>
 <body>
 <header>
@@ -107,6 +107,7 @@ main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:
 <main>
  
 <section id="street-scene" aria-label="Lu’s Lounge exterior">
+ <img id="exterior-backdrop" class="exterior-backdrop" src="./exterior.jpg" alt="" aria-hidden="true">
  <div class="exterior-frame">
   <img id="exterior-artwork" src="./exterior.jpg" width="1672" height="941" alt="Lu’s Lounge at night: a run-down brick building under a full moon with a neon crown sign over a dark open doorway. The crown is blue when the lounge is open and red when it is closed.">
   <span class="sign-glow" id="sign-glow" aria-hidden="true"></span>
@@ -129,6 +130,7 @@ main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:
 <div id="entry" class="entry" hidden>
  <button type="button" id="entry-back" class="entry-back" aria-label="Close the door">✕ STEP BACK OUTSIDE</button>
  <p id="entry-lock" class="entry-lock" hidden></p>
+<div class="hall-stage">
 <section id="login-door">
   <h2>THE ENTRANCE</h2><p class="muted">Enter your member credentials.</p>
   <form id="login-form">
@@ -138,6 +140,7 @@ main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:
   </form>
   <p id="strike-note">Strikes: 0 / 3</p><p id="status-note">Awaiting credentials...</p>
  </section>
+</div>
 </div>
  <section id="shop-app"></section>
 </main>
@@ -179,7 +182,7 @@ document.querySelector("#close-window")?.addEventListener("click", () => {
   if (windowMessage) windowMessage.hidden = true;
 });
 </script>
-<script type="module" src="./pwa.js?v=nightshop-hall-19"></script>
-<script type="module" src="./login.js?v=nightshop-hall-19"></script>
+<script type="module" src="./pwa.js?v=nightshop-hall-20"></script>
+<script type="module" src="./login.js?v=nightshop-hall-20"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-hall-19";
+const SHOP_VERSION = "nightshop-hall-20";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
@@ -42,7 +42,10 @@ questionForm?.addEventListener("submit", async event => {
 });
 
 // Red sign = closed. Members can still sign in (profile + bathroom only); ordering is switched off inside.
+const artworkEl = document.querySelector("#exterior-artwork"), backdropEl = document.querySelector("#exterior-backdrop");
+if (artworkEl && backdropEl) new MutationObserver(() => { backdropEl.src = artworkEl.src; }).observe(artworkEl, { attributes: true, attributeFilter: ["src"] });   // the blurred fill behind the picture follows it
 function showClosedDoor(closed, message) {
+  document.querySelector("#entry")?.classList.toggle("is-closed", Boolean(closed));   // red tint in the hallway too
   const hint = document.querySelector("#tap-hint");
   const lock = document.querySelector("#entry-lock");
   const scene = document.querySelector("#street-scene");

@@ -88,9 +88,9 @@ const tabsMarkup = (id, a, b, c) => `<div class="tabs" id="${id}"><button type="
 
 /* ---------- the menu: three floating holograms ---------- */
 const ITEMS = [
-  { id: "ice",  icon: "❄️", name: "Honeydrippers", detail: "Frozen Kool-Aid ice cups with candy and/or fruit", kind: "amount", color: "mint",  spot: { l: 7.6, t: 29.5, w: 7, h: 16 } },
-  { id: "tea",  icon: "🌴", name: "Herbal teas",   detail: "Small or Big · choose a bundle",                    kind: "tea",    color: "green", spot: { l: 16.2, t: 28, w: 7, h: 16 } },
-  { id: "shot", icon: "⚕️", name: "Herbal shots",  detail: "Small or Medium · priced per shot glass",           kind: "shot",   color: "gold",  spot: { l: 24.8, t: 29, w: 7, h: 16 } }
+  { id: "ice",  icon: "❄️", name: "Honeydrippers", detail: "Frozen Kool-Aid ice cups with candy and/or fruit", kind: "amount", color: "mint",  spot: { l: 9, t: 33.7, w: 6, h: 11 } },
+  { id: "tea",  icon: "🌴", name: "Herbal teas",   detail: "Small or Big · choose a bundle",                    kind: "tea",    color: "green", spot: { l: 17, t: 33.2, w: 6, h: 11 } },
+  { id: "shot", icon: "⚕️", name: "Herbal shots",  detail: "Small or Medium · priced per shot glass",           kind: "shot",   color: "gold",  spot: { l: 25, t: 32.4, w: 6, h: 11 } }
 ];
 const COLORS = { mint: "#8dffe6", green: "#38ff7a", gold: "#ffd36a" };
 

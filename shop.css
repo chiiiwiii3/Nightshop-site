@@ -361,3 +361,32 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 /* bathroom: a little larger than "fit" – fills more of the screen without distortion; the shadowman stays in view */
 #bath-sheet .sheet-card{background-size:auto 58svh;background-position:84% 56px}
 @media(min-aspect-ratio:1/1){#bath-sheet .sheet-card{background-size:cover;background-position:center}}
+
+/* ---------- storefront: the whole picture, centred; a blurred copy of it fills any leftover screen ---------- */
+#street-scene{position:relative;overflow:hidden;background:#000}
+.exterior-backdrop{position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;filter:blur(22px) brightness(.55);pointer-events:none}
+
+/* ---------- hallway: the login box sits where the double doors are, so the whole hallway shows ---------- */
+.entry{display:block;padding:0;overflow:hidden;background:#030304}
+.entry .hall-stage{--hu:max(1vw,1.7767dvh);position:absolute;left:50%;top:50%;width:calc(var(--hu)*100);height:calc(var(--hu)*56.28);transform:translate(-50%,-50%);background:url(./art/hallway.jpg) center/100% 100% no-repeat}
+.entry #login-door{position:absolute;left:42.3%;top:38.3%;width:16.2%;height:27.7%;margin:0;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;padding:calc(var(--hu)*.5) calc(var(--hu)*.7);overflow:hidden;border-width:calc(var(--hu)*.7);background:radial-gradient(120% 90% at 50% 0,rgba(6,40,20,.93),rgba(2,10,6,.95));text-align:center}
+.entry #login-door h2{font-size:calc(var(--hu)*1.15);margin:0 0 calc(var(--hu)*.3)}
+.entry #login-door .muted{display:none}
+.entry #login-door form{display:flex;flex-direction:column;gap:calc(var(--hu)*.35)}
+.entry #login-door input{font-size:max(16px,calc(var(--hu)*.95));padding:calc(var(--hu)*.4) calc(var(--hu)*.6);margin:0;width:100%;box-sizing:border-box;border-radius:calc(var(--hu)*.6)}
+.entry #login-door button.wide,.entry #login-door #login-button{font-size:calc(var(--hu)*.95);padding:calc(var(--hu)*.45) 0;margin:0;border-radius:calc(var(--hu)*.7)}
+.entry #login-door #strike-note,.entry #login-door #status-note{font-size:calc(var(--hu)*.7);margin:calc(var(--hu)*.15) 0 0}
+.entry.is-closed:after{content:"";position:absolute;inset:0;z-index:5;pointer-events:none;background:rgba(255,25,55,.62);mix-blend-mode:color}
+
+/* ---------- lounge: no top bar; Sign out lives in the profile, the lights decide open or closed ---------- */
+.nsx-top{display:none!important}
+.nsx .spot-profile{width:calc(var(--wu,10px) * 5.2);height:calc(var(--wu,10px) * 5.2);margin:calc(var(--wu,10px) * -2.6) 0 0 calc(var(--wu,10px) * -2.6)}
+
+/* bar holograms: small, standing on the counter, turned a little in 3D */
+.nsx .spot{perspective:calc(var(--wu,10px) * 40)}
+.nsx .spot .holo-glyph{font-size:calc(var(--wu,10px) * 3.3);top:0;transform-origin:50% 100%;animation:holo-turn 3.4s ease-in-out infinite}
+@keyframes holo-turn{0%,100%{transform:rotateY(-24deg) rotateX(6deg) translateY(0)}50%{transform:rotateY(-24deg) rotateX(6deg) translateY(-6%)}}
+.nsx .spot .spot-ring{inset:auto 0 -4% 0;height:18%;transform:rotateX(62deg)}
+.nsx .spot:before{top:30%;left:20%;right:20%}
+.entry #login-door{left:41.3%;top:36.6%;width:18.2%;height:30.6%}
+.nsx .spot .holo-glyph{font-size:calc(var(--wu,10px) * 3.9)}

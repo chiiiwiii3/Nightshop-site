@@ -345,3 +345,12 @@ body:has(#shop-app .nsx){overflow-x:hidden}
 body:has(#shop-app .nsx) footer{display:none}
 .sheet .sheet-card.pf-card{padding-top:20px}
 .pf-card .pf-top{margin-right:52px}
+/* bathroom: the picture fills the whole screen; the message box floats over it, see-through */
+#bath-sheet .sheet-card{display:flex;flex-direction:column;justify-content:flex-end;padding:0;background:#000 url(./art/bathroom.jpg) center/cover no-repeat;overflow:hidden}
+#bath-sheet .bath-art{display:none}
+#bath-sheet .bath-chat{width:min(calc(100% - 20px),640px);max-height:48%;overflow:auto;margin:0 auto max(12px,env(safe-area-inset-bottom));padding:12px 14px;border-radius:18px;border:1px solid rgba(233,185,58,.65);background:rgba(3,14,8,.38);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);box-shadow:0 0 22px rgba(0,0,0,.5)}
+#bath-sheet .bath-chat>*{width:auto!important;margin-left:0!important;margin-right:0!important}
+#bath-sheet .bath-chat h2{margin:0 0 4px;text-align:center}
+#bath-sheet .bath-chat .msg-bar input{background:rgba(0,0,0,.35)}
+#bath-sheet .sheet-card{background-position:84% 50%}
+#bath-sheet .bath-chat{max-height:42%}

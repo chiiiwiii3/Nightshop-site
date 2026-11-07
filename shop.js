@@ -203,12 +203,14 @@ root.innerHTML = `
     <div class="sheet-card" style="--c:#ffd98a" role="dialog" aria-modal="true" aria-labelledby="bath-title">
       <button type="button" class="sheet-close" id="bath-close" aria-label="Close">×</button>
       <div class="bath-art" role="img" aria-label="The bathroom: black marble and gold, a stall door ajar and a shadowy figure in a hat watching from inside"></div>
+      <div class="bath-chat">
       <h2 id="bath-title">THE BATHROOM</h2>
       <p class="muted small">Someone is listening from the stall. Type a message and wait for the reply.</p>
       <form id="message-form" class="msg-bar"><input id="member-message" name="message" maxlength="1000" placeholder="Tap to message…" autocomplete="off" required><button type="submit" aria-label="Send message">➤</button></form>
       <p id="message-note" aria-live="polite" class="small"></p>
       <button type="button" class="ghost" id="clear-chat" hidden>🗑 Delete my conversation with the shadow</button>
       <div id="message-history" class="stack"></div>
+      </div>
     </div>
   </div>
   <div class="sheet profile-sheet" id="profile-sheet" hidden>

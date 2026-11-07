@@ -128,16 +128,19 @@ root.innerHTML = `
         <div class="lounge-copy">
           <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign, a bar and green velvet seating" draggable="false">
           ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
+          <button type="button" class="spot-profile" data-profile aria-label="Open your profile"><img src="./art/profile-icon.png" alt="" draggable="false"></button>
           <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:68.7%;top:27.8%;width:6.8%;height:22.6%"><span class="spot-ring"></span></button>
         </div>
         <div class="lounge-copy">
           <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign, a bar and green velvet seating" draggable="false">
           ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
+          <button type="button" class="spot-profile" data-profile aria-label="Open your profile"><img src="./art/profile-icon.png" alt="" draggable="false"></button>
           <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:68.7%;top:27.8%;width:6.8%;height:22.6%"><span class="spot-ring"></span></button>
         </div>
         <div class="lounge-copy">
           <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign, a bar and green velvet seating" draggable="false">
           ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
+          <button type="button" class="spot-profile" data-profile aria-label="Open your profile"><img src="./art/profile-icon.png" alt="" draggable="false"></button>
           <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:68.7%;top:27.8%;width:6.8%;height:22.6%"><span class="spot-ring"></span></button>
         </div>
       </div>
@@ -431,6 +434,7 @@ root.addEventListener("click", event => {
 /* the restroom sign opens the bathroom window */
 const bathSheet = $("#bath-sheet");
 const closeBath = () => { bathSheet.hidden = true; };
+root.addEventListener("click", event => { if (event.target.closest("[data-profile]")) { if (dragged) return; openProfile(); } });
 root.addEventListener("click", event => { if (event.target.closest("[data-bath]")) { if (dragged) return; bathSheet.hidden = false; } });
 $("#bath-close").addEventListener("click", closeBath);
 bathSheet.addEventListener("click", event => { if (event.target.id === "bath-sheet") closeBath(); });

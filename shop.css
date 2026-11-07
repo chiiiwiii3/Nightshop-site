@@ -390,3 +390,5 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 .nsx .spot:before{top:30%;left:20%;right:20%}
 .entry #login-door{left:41.3%;top:36.6%;width:18.2%;height:30.6%}
 .nsx .spot .holo-glyph{font-size:calc(var(--wu,10px) * 3.9)}
+.nsx .spot-profile{width:calc(var(--wu,10px) * 7.4);height:calc(var(--wu,10px) * 7.4);margin:calc(var(--wu,10px) * -3.7) 0 0 calc(var(--wu,10px) * -3.7)}
+.exterior-backdrop{display:none}

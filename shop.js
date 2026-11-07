@@ -84,7 +84,7 @@ function patch(el, html) {
   });
 }
 
-const tabsMarkup = (id, a, b) => `<div class="tabs" id="${id}"><button type="button" data-tab="active" class="on">${a} <span class="count" id="${id}-count-active">0</span></button><button type="button" data-tab="history">${b} <span class="count" id="${id}-count-history">0</span></button></div>`;
+const tabsMarkup = (id, a, b, c) => `<div class="tabs" id="${id}"><button type="button" data-tab="active" class="on">${a} <span class="count" id="${id}-count-active">0</span></button><button type="button" data-tab="history">${b} <span class="count" id="${id}-count-history">0</span></button>${c ? `<button type="button" data-tab="balances">${c}</button>` : ""}</div>`;
 
 /* ---------- the menu: three floating holograms ---------- */
 const ITEMS = [
@@ -99,11 +99,12 @@ const ownerMarkup = isOwner ? `
     <h2>OWNER CONTROLS</h2>
     <button id="toggle-shop" class="lights-btn" type="button">💡 LIGHTS</button>
     <p class="muted small">Blue lights = shop open. Red lights = shop closed. Members see the change within seconds.</p>
-    ${tabsMarkup("owner-tabs", "Active", "History")}
+    ${tabsMarkup("owner-tabs", "Active", "History", "💵 Balances")}
     <h3 id="owner-orders-title">INCOMING ORDERS</h3>
     <div id="owner-orders" class="stack">Loading…</div>
     <h3 id="owner-messages-title">CUSTOMER MESSAGES</h3>
     <div id="owner-messages" class="stack">Loading…</div>
+    <div id="owner-balances" hidden></div>
     <h3>INVITE MEMBERS</h3>
     <p class="muted small">Show this to someone and have them scan it with their camera, or tap Share. It opens an install screen first, so they get the app on their Home Screen.</p>
     <div class="invite-box"><img id="invite-qr" src="./icons/invite-qr.svg" alt="Scan to join Lu’s Lounge" width="200" height="200"></div>
@@ -231,6 +232,7 @@ root.innerHTML = `
           <section class="pf-box pf-balance" id="pf-balance-box">
             <h3>Balance</h3>
             <div class="pf-money"><span class="pf-coin">$</span><div><b id="pf-due">$0.00</b><small id="pf-due-note">No Balance Due</small></div></div>
+            <div id="pf-ledger" class="pf-ledger"></div>
           </section>
           <button type="button" class="pf-btn pf-close" id="pf-close2">✕ Close Profile</button>
         </div>
@@ -264,9 +266,9 @@ root.innerHTML = `
             <h3><span class="pf-ico">💬</span> Messages</h3>
             <button type="button" class="pf-row pf-from" data-pf="msg"><img src="./art/shadowman.jpg" alt=""><span>From: Shadowman<small>Tap to view message history</small></span><i>›</i></button>
             <div class="pf-sub" id="pf-msg" hidden>
+              <form id="pf-msg-form" class="msg-bar" autocomplete="off"><input name="message" maxlength="1000" placeholder="Message Shadowman…" autocomplete="off" required><button type="submit" aria-label="Send message">➤</button></form>
+              <p class="pf-note" id="pf-msg-note" aria-live="polite">Messages go privately to Shadowman.</p>
               <div id="pf-msg-list" class="stack"></div>
-              <p class="pf-note">To send a new message, go through Shadowman in the bathroom.</p>
-              <button type="button" class="pf-btn" id="pf-to-bath">🚪 Go to the bathroom</button>
             </div>
           </section>
         </div>
@@ -615,15 +617,21 @@ function paintAvatars() {
     if (myAvatar) { const img = new Image(); img.alt = ""; img.src = myAvatar; el.append(img); } else el.innerHTML = SILHOUETTE;
   }
 }
-const isOwed = o => { const st = cls(o.status); return !o.paid && (st === "confirmed" || st === "done" || (st !== "denied" && isDone(o, threadFor(o.id, myMessages)))); };
+let myLedger = [];
+async function loadLedger() {
+  if (isOwner) return;
+  const { data, error } = await supabase.from("ledger").select("id,amount,note,created_at").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(200);
+  if (!error) myLedger = data || [];
+}
 function renderProfile() {
   $("#pf-name").textContent = profile.display_name || "Member";
   paintAvatars();
   $("#pf-balance-box").hidden = isOwner; $("#pf-msg-box").hidden = isOwner; $("#pf-del-row").hidden = isOwner;
-  const due = myOrders.filter(isOwed).reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
-  $("#pf-due").textContent = money(due);
+  const due = Math.round(myLedger.reduce((sum, r) => sum + Number(r.amount), 0) * 100) / 100;
+  $("#pf-due").textContent = money(Math.abs(due));
   $("#pf-due").classList.toggle("owes", due > 0);
-  $("#pf-due-note").textContent = due > 0 ? "Please settle up with the shop" : "No Balance Due";
+  $("#pf-due-note").textContent = due > 0 ? "Balance owed to the shop" : due < 0 ? "Credit on your account" : "No Balance Due";
+  $("#pf-ledger").innerHTML = myLedger.slice(0, 12).map(r => `<div class="bal-entry"><span>${when(r.created_at)}</span><span>${safe(r.note || (Number(r.amount) > 0 ? "Charge" : "Payment"))}</span><b class="${Number(r.amount) > 0 ? "owes" : "paid"}">${Number(r.amount) > 0 ? "+" : "−"}${money(Math.abs(r.amount))}</b></div>`).join("");
   const plain = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)) && !hasDone(m));
   $("#pf-msg-list").innerHTML = plain.slice(0, 30).map(m => `<div class="row-card"><div><b>You</b><small>${safe(m.message)}</small>${replyLines(m.reply).length ? `<div class="reply">🕴️ ${safe(replyLines(m.reply).join("\n"))}</div>` : ""}</div></div>`).join("") || "<p class=\"pf-note\">No messages yet.</p>";
   const hasPin = Boolean(getPin());
@@ -631,15 +639,24 @@ function renderProfile() {
   $("#pf-pin-form").elements.cur.hidden = !hasPin; $("#pf-pin-form").elements.cur.required = hasPin; $("#pf-pin-off").hidden = !hasPin;
 }
 function openProfile() {
-  Promise.all([loadOrders(), loadMessages()]).finally(renderProfile);
+  Promise.all([loadOrders(), loadMessages(), loadLedger()]).finally(renderProfile);
   renderProfile();
+  Object.values(SUBS).forEach(sel => { $(sel).hidden = true; });
+  if (!isOwner) $("#pf-msg").hidden = false;               // the message box is open as soon as the profile opens
   profileSheet.hidden = false;
 }
 $("#open-profile").addEventListener("click", openProfile);
 $("#profile-close").addEventListener("click", closeProfile);
 $("#pf-close2").addEventListener("click", closeProfile);
 profileSheet.addEventListener("click", event => { if (event.target.id === "profile-sheet") closeProfile(); });
-$("#pf-to-bath").addEventListener("click", () => { closeProfile(); bathSheet.hidden = false; });
+$("#pf-msg-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const input = event.target.elements.message, note = $("#pf-msg-note"), message = input.value.trim(); if (!message) return;
+  note.textContent = "Sending…";
+  const { error } = await supabase.from("messages").insert({ customer_id: user.id, message });
+  note.textContent = error ? "Message could not be sent." : "Sent privately to Shadowman.";
+  if (!error) { input.value = ""; await loadMessages(); renderProfile(); }
+});
 paintAvatars();
 
 const SUBS = { pw: "#pf-pw", pin: "#pf-pin", app: "#pf-app", msg: "#pf-msg" };
@@ -758,7 +775,7 @@ function showOrder(id) {
   } else { setMyTab("active"); openThread(id); }
 }
 async function loadOrders() {
-  const { data, error } = await supabase.from("orders").select("id,item,quantity,total_amount,status,created_at,paid")
+  const { data, error } = await supabase.from("orders").select("id,item,quantity,total_amount,status,created_at")
     .eq("customer_id", user.id).order("created_at", { ascending: false }).limit(60);
   if (error) { $("#order-history").textContent = "Could not load orders."; return; }
   myOrders = data || [];
@@ -863,6 +880,60 @@ if (isOwner) {
     await refreshStatus();
   });
 
+
+  /* ----- balances: what each member owes (the owner logs it; the member sees the same numbers in their profile) ----- */
+  let balMembers = [], balRows = [], balOpen = null;
+  const sumFor = id => balRows.filter(r => r.customer_id === id).reduce((t, r) => t + Number(r.amount), 0);
+  async function loadBalances() {
+    const [people, entries] = await Promise.all([
+      supabase.from("profiles").select("id,display_name,username").eq("is_owner", false).order("display_name"),
+      supabase.from("ledger").select("id,customer_id,amount,note,created_at").order("created_at", { ascending: false }).limit(2000)
+    ]);
+    if (people.error || entries.error) { $("#owner-balances").textContent = "Could not load balances."; return; }
+    balMembers = people.data || []; balRows = entries.data || [];
+    renderBalances();
+  }
+  function renderBalances() {
+    const box = $("#owner-balances");
+    const total = balMembers.reduce((t, m) => t + Math.max(0, sumFor(m.id)), 0);
+    const rows = [...balMembers].sort((x, y) => sumFor(y.id) - sumFor(x.id));
+    box.innerHTML = `<div class="bal-total">TOTAL OWED TO YOU <b>${money(total)}</b></div>` + (rows.map(m => {
+      const due = sumFor(m.id), open = balOpen === m.id;
+      const label = due > 0 ? money(due) + " owed" : due < 0 ? money(-due) + " credit" : "Settled";
+      const entries = balRows.filter(r => r.customer_id === m.id);
+      const detail = open ? `<div class="bal-detail">
+        <form class="bal-form" data-member="${safe(m.id)}" autocomplete="off">
+          <input name="amount" type="number" inputmode="decimal" step="0.01" min="0.01" max="99999" placeholder="Amount $" required>
+          <input name="note" maxlength="200" placeholder="What for? (optional)">
+          <div class="app-row"><button type="submit" data-kind="charge">➕ They owe this</button><button type="submit" class="ghost" data-kind="payment">💵 Payment received</button></div>
+        </form>
+        ${entries.map(r => `<div class="bal-entry"><span>${when(r.created_at)}</span><span>${safe(r.note || (Number(r.amount) > 0 ? "Charge" : "Payment"))}</span><b class="${Number(r.amount) > 0 ? "owes" : "paid"}">${Number(r.amount) > 0 ? "+" : "−"}${money(Math.abs(r.amount))}</b><button type="button" class="mini-del" data-bal-del="${safe(r.id)}" aria-label="Delete this entry">🗑</button></div>`).join("") || '<p class="muted small">Nothing logged yet.</p>'}
+      </div>` : "";
+      return `<div class="row-card bal-row ${open ? "open" : ""}"><div class="bal-head" data-bal="${safe(m.id)}"><div><b>${safe(m.display_name || m.username || "Member")}</b><small>${safe(m.username ? "@" + m.username : "")}</small></div><span class="bal-amt ${due > 0 ? "owes" : "clear"}">${label}</span></div>${detail}</div>`;
+    }).join("") || '<p class="muted small">No members yet.</p>');
+  }
+  $("#owner-balances").addEventListener("click", async event => {
+    const head = event.target.closest("[data-bal]");
+    if (head) { balOpen = balOpen === head.dataset.bal ? null : head.dataset.bal; renderBalances(); return; }
+    const del = event.target.closest("[data-bal-del]");
+    if (del) {
+      if (!(await ask("Delete this entry? The member's balance changes right away.", "Delete"))) return;
+      const { error } = await supabase.from("ledger").delete().eq("id", del.dataset.balDel);
+      if (error) { console.error(error); toast("Could not delete it.", "alert"); return; }
+      await loadBalances();
+    }
+  });
+  $("#owner-balances").addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.target.closest(".bal-form"); if (!form) return;
+    const kind = event.submitter?.dataset.kind || "charge", amount = Math.round(Number(form.elements.amount.value) * 100) / 100;
+    if (!(amount > 0)) { toast("Enter an amount above zero.", "alert"); return; }
+    const { error } = await supabase.from("ledger").insert({ customer_id: form.dataset.member, amount: kind === "payment" ? -amount : amount, note: form.elements.note.value.trim().slice(0, 200) });
+    if (error) { console.error(error); toast("Could not save that.", "alert"); return; }
+    toast(kind === "payment" ? "Payment recorded." : "Added to what they owe.");
+    await loadBalances();
+  });
+
   const knownPending = new Set();
   let ownerOrdersLoaded = false, ownerOrders = [], ownerMsgs = [];
   const ownerNames = new Map();
@@ -888,6 +959,10 @@ if (isOwner) {
   function setOwnerTab(tab) {
     ownerTab = tab;
     $$("#owner-tabs [data-tab]").forEach(btn => btn.classList.toggle("on", btn.dataset.tab === tab));
+    const onBalances = tab === "balances";
+    ["#owner-orders-title", "#owner-orders", "#owner-messages-title", "#owner-messages"].forEach(sel => { $(sel).hidden = onBalances; });
+    $("#owner-balances").hidden = !onBalances;
+    if (onBalances) { loadBalances(); return; }
     $("#owner-orders-title").textContent = tab === "history" ? "PAST ORDERS" : "INCOMING ORDERS";
     $("#owner-messages-title").textContent = tab === "history" ? "OLD MESSAGES" : "CUSTOMER MESSAGES";
     renderOwnerOrders(); renderOwnerMessages();
@@ -907,13 +982,13 @@ if (isOwner) {
         ? `<div class="thread-box"><span class="fulfil-tag">CONVERSATION</span><div class="chat">${ownerBubbles(thread, name)}</div>${done ? '<div class="bubble sys">✅ Done</div>' : `<form class="msg-bar small-bar" data-msg="${safe(target.id ?? "")}" data-append="1"><input data-draft="r:${safe(target.id ?? "")}" name="reply" maxlength="500" placeholder="Reply to ${safe(name)}…" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></form>`}</div>`
         : '<small class="pending-note">No conversation yet (older order)</small>';
       const pill = done ? '<span class="status status-done">Done ✅</span>' : `<span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span>`;
-      return `<div class="row-card order-card ${!done && cls(o.status) === "pending" ? "is-new" : ""} ${done ? "is-done" : ""}" data-order-card="${safe(o.id)}"><div><b>${safe(o.item)}</b><small>${safe(name)} · ${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}<div class="decide">${done ? `<button type="button" class="d-wait" data-reopen="${safe(o.id)}">↩ Reopen</button>` : `<button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied" ${cls(o.status) === "denied" ? "disabled" : ""}>Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button><button type="button" class="d-done" data-done="${safe(o.id)}">Done</button>`}${cls(o.status) === "denied" ? "" : `<button type="button" class="${o.paid ? "d-wait" : "d-confirm"}" data-paid="${safe(o.id)}" data-to="${!o.paid}">${o.paid ? "💵 Paid ✓ · undo" : "💵 Mark paid"}</button>`}</div>${chat}</div>`;
+      return `<div class="row-card order-card ${!done && cls(o.status) === "pending" ? "is-new" : ""} ${done ? "is-done" : ""}" data-order-card="${safe(o.id)}"><div><b>${safe(o.item)}</b><small>${safe(name)} · ${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}<div class="decide">${done ? `<button type="button" class="d-wait" data-reopen="${safe(o.id)}">↩ Reopen</button>` : `<button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied" ${cls(o.status) === "denied" ? "disabled" : ""}>Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button><button type="button" class="d-done" data-done="${safe(o.id)}">Done</button>`}</div>${chat}</div>`;
     }).join("") || (ownerTab === "history" ? "No past orders yet." : "No open orders."));
   }
   const orderCard = id => $('#owner-orders [data-order-card="' + id + '"]');
 
   loadOwnerOrders = async () => {
-    const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at,paid").order("created_at", { ascending: false }).limit(100);
+    const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at").order("created_at", { ascending: false }).limit(100);
     if (error) { $("#owner-orders").textContent = "Could not load orders."; return; }
     ownerOrders = data || [];
     await learnNames(ownerOrders.map(o => o.customer_id));
@@ -929,13 +1004,6 @@ if (isOwner) {
   $("#owner-orders").addEventListener("click", async event => {
     const doneButton = event.target.closest("[data-done]");
     if (doneButton) { await markDone(doneButton.dataset.done); return; }
-    const paidButton = event.target.closest("[data-paid]");
-    if (paidButton) {
-      paidButton.disabled = true;
-      const { error } = await supabase.from("orders").update({ paid: paidButton.dataset.to === "true" }).eq("id", paidButton.dataset.paid);
-      if (error) { console.error(error); toast("Could not update payment.", "alert"); } else toast(paidButton.dataset.to === "true" ? "Marked paid." : "Marked unpaid.");
-      await loadOwnerOrders(); return;
-    }
     const reopenButton = event.target.closest("[data-reopen]");
     if (reopenButton) { await reopenOrder(reopenButton.dataset.reopen); return; }
     const button = event.target.closest("[data-order]"); if (!button) return;

@@ -150,14 +150,9 @@ root.innerHTML = `
     <button class="look look-left" id="look-left" type="button" aria-label="Look left">‹</button>
     <button class="look look-right" id="look-right" type="button" aria-label="Look right">›</button>
     <p class="lounge-hint">DRAG TO LOOK AROUND · TAP A HOLOGRAM</p>
-    <div class="closed-veil" id="closed-veil" hidden><b>THE LOUNGE IS CLOSED</b><span>You can still check your orders below and message the shadow through the bathroom door.</span></div>
+    <div class="closed-veil" id="closed-veil" hidden><b>THE LOUNGE IS CLOSED</b><span>You can still check your orders in your profile and message the shadow through the bathroom door.</span></div>
   </section>
 
-  <section class="panel">
-    <h2>YOUR ORDERS</h2>
-    ${tabsMarkup("my-tabs", "Orders", "History")}
-    <div id="order-history" class="stack">Loading…</div>
-  </section>
 
 
 
@@ -272,6 +267,11 @@ root.innerHTML = `
               <p class="pf-note">To start a new conversation, go see Shadowman in the bathroom.</p>
               <button type="button" class="pf-btn" id="pf-to-bath">🚪 See Shadowman</button>
             </div>
+          </section>
+          <section class="pf-box pf-myorders">
+            <h3><span class="pf-ico">🧾</span> My Orders</h3>
+            ${tabsMarkup("my-tabs", "Orders", "History")}
+            <div id="order-history" class="stack">Loading…</div>
           </section>
         </div>
       </div></div>
@@ -777,6 +777,7 @@ function renderMyOrders() {
 /* open an order from an alert: open orders open their chat, finished ones show in History */
 function showOrder(id) {
   const order = myOrders.find(o => String(o.id) === String(id)); if (!order) return;
+  openProfile();
   if (isFinished(order, threadFor(order.id, myMessages))) {
     closeThread(); setMyTab("history");
     setTimeout(() => flash($('#order-history [data-order-card="' + id + '"]')), 100);

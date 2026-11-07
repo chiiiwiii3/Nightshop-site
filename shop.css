@@ -332,3 +332,4 @@ body.entry-open{overflow:hidden}
 .entry #login-door input{border:1px solid #c8962a;border-radius:10px;background:#020a05;color:#fff;padding:13px}
 .entry #login-door button.wide,.entry #login-door #login-button{width:100%;border:2px solid #e9b93a;border-radius:14px;background:linear-gradient(#201a08,#080602);color:#f6c744;font:italic 700 19px Georgia,serif;text-transform:none;letter-spacing:0;box-shadow:inset 0 0 10px #000}
 .entry #login-door #status-note,.entry #login-door #strike-note{color:#cfe8d6}
+#thread-sheet{z-index:120}

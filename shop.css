@@ -354,3 +354,7 @@ body:has(#shop-app .nsx) footer{display:none}
 #bath-sheet .bath-chat .msg-bar input{background:rgba(0,0,0,.35)}
 #bath-sheet .sheet-card{background-position:84% 50%}
 #bath-sheet .bath-chat{max-height:42%}
+.lounge-hint{display:none!important}
+html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;overscroll-behavior:none;background:#000}
+#bath-sheet .sheet-card{background-size:contain;background-position:center}
+#bath-sheet .sheet-card{background-position:center 56px}

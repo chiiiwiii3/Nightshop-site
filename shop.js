@@ -148,7 +148,6 @@ root.innerHTML = `
     </div>
     <button class="look look-left" id="look-left" type="button" aria-label="Look left">‹</button>
     <button class="look look-right" id="look-right" type="button" aria-label="Look right">›</button>
-    <p class="lounge-hint">DRAG TO LOOK AROUND · TAP A HOLOGRAM</p>
     <div class="closed-veil" id="closed-veil" hidden><b>THE LOUNGE IS CLOSED</b><span>You can still check your orders in your profile and message the shadow through the bathroom door.</span></div>
   </section>
 

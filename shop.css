@@ -403,3 +403,6 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
   #street-scene.door-closed .exterior-tall{filter:hue-rotate(-120deg) saturate(1.2)}       /* red lights = closed */
   .door-hotspot{left:46%;top:52%;width:18.5%;height:17%}
 }
+/* owner's picture inside the Florida frame (cropped to the frame's shape) */
+.lounge-painting{position:absolute;z-index:1;left:78.7%;top:26.7%;width:9.9%;height:20.3%;object-fit:cover;pointer-events:none;filter:brightness(.92) saturate(1.05);box-shadow:inset 0 0 calc(var(--wu,10px) * .9) rgba(0,0,0,.75)}
+.lounge-painting[hidden]{display:none}

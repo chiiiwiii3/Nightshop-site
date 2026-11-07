@@ -113,7 +113,12 @@ const ownerControlsMarkup = isOwner ? `
     <h3>EXTERIOR ARTWORK</h3>
     <p class="muted small">Replace the storefront picture from your phone Gallery. JPG, PNG, or WebP · up to 15 MB.</p>
     <input id="exterior-upload" type="file" accept="image/jpeg,image/png,image/webp">
-    <p id="exterior-upload-status" aria-live="polite"></p>` : "";
+    <p id="exterior-upload-status" aria-live="polite"></p>
+    <h3>LOUNGE PAINTING</h3>
+    <p class="muted small">Pick a picture for the Florida frame by the bathroom door. It is cropped to fit the frame for you. A tall picture works best.</p>
+    <input id="painting-upload" type="file" accept="image/jpeg,image/png,image/webp">
+    <div class="app-row"><button type="button" class="ghost" id="painting-reset">Put the gator back</button></div>
+    <p id="painting-status" aria-live="polite"></p>` : "";
 const ownerTabsMarkup = isOwner ? '<div class="tabs pf-top" id="pf-top"><button type="button" data-pane="me" class="on">👤 Profile</button><button type="button" data-pane="orders">🧾 Orders</button><button type="button" data-pane="controls">⚙ Controls</button></div>' : "";
 const ownerPanes = isOwner ? `<div class="pf-pane owner-pane" data-pane="orders" hidden>${ownerOrdersMarkup}</div><div class="pf-pane owner-pane" data-pane="controls" hidden>${ownerControlsMarkup}</div>` : "";
 
@@ -128,18 +133,21 @@ root.innerHTML = `
       <div class="lounge-world" id="lounge-world">
         <div class="lounge-copy">
           <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign, a bar and green velvet seating" draggable="false">
+          <img class="lounge-painting" alt="" hidden draggable="false">
           ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
           <button type="button" class="spot-profile" data-profile aria-label="Open your profile"><img src="./art/profile-icon.png" alt="" draggable="false"></button>
           <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:68.7%;top:27.8%;width:6.8%;height:22.6%"><span class="spot-ring"></span></button>
         </div>
         <div class="lounge-copy">
           <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign, a bar and green velvet seating" draggable="false">
+          <img class="lounge-painting" alt="" hidden draggable="false">
           ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
           <button type="button" class="spot-profile" data-profile aria-label="Open your profile"><img src="./art/profile-icon.png" alt="" draggable="false"></button>
           <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:68.7%;top:27.8%;width:6.8%;height:22.6%"><span class="spot-ring"></span></button>
         </div>
         <div class="lounge-copy">
           <img class="lounge-art" src="./art/lounge.jpg" alt="The private lounge: black leather seating, a pool table, a poker table and a glowing Lu’s Lounge sign, a bar and green velvet seating" draggable="false">
+          <img class="lounge-painting" alt="" hidden draggable="false">
           ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
           <button type="button" class="spot-profile" data-profile aria-label="Open your profile"><img src="./art/profile-icon.png" alt="" draggable="false"></button>
           <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:68.7%;top:27.8%;width:6.8%;height:22.6%"><span class="spot-ring"></span></button>
@@ -1161,7 +1169,59 @@ if (isOwner) {
       artworkInput.disabled = false;
     }
   });
+
+  /* owner: pick a picture, it is cropped to the frame's shape (cover) and shared with everyone */
+  const paintingInput = $("#painting-upload"), paintingStatus = $("#painting-status");
+  const cropToFrame = file => new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const W = 864, H = 1000, c = document.createElement("canvas"); c.width = W; c.height = H;
+      const k = Math.max(W / img.naturalWidth, H / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;
+      c.getContext("2d").drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+      URL.revokeObjectURL(url);
+      c.toBlob(blob => blob ? resolve(blob) : reject(new Error("Could not read that picture.")), "image/jpeg", 0.9);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Could not read that picture.")); };
+    img.src = url;
+  });
+  paintingInput.addEventListener("change", async () => {
+    const file = paintingInput.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 15 * 1024 * 1024) { paintingStatus.textContent = "Choose a JPG, PNG, or WebP image under 15 MB."; paintingInput.value = ""; return; }
+    paintingInput.disabled = true; paintingStatus.textContent = "Fitting and uploading…";
+    try {
+      const blob = await cropToFrame(file);
+      const { error } = await supabase.storage.from("nightshop-artwork").upload(PAINTING, blob, { upsert: true, contentType: "image/jpeg", cacheControl: "0" });
+      if (error) throw error;
+      const { data } = supabase.storage.from("nightshop-artwork").getPublicUrl(PAINTING);
+      showPainting(data.publicUrl + "?v=" + Date.now());
+      paintingStatus.textContent = "Your picture is in the frame.";
+    } catch (error) {
+      console.error("Painting upload failed:", error);
+      paintingStatus.textContent = "Upload failed: " + (error?.message || "Please try again.");
+    } finally { paintingInput.disabled = false; paintingInput.value = ""; }
+  });
+  $("#painting-reset").addEventListener("click", async () => {
+    paintingStatus.textContent = "Putting the gator back…";
+    const { error } = await supabase.storage.from("nightshop-artwork").remove([PAINTING]);
+    if (error) { paintingStatus.textContent = "Could not reset: " + error.message; return; }
+    showPainting(null); paintingStatus.textContent = "The gator is back.";
+  });
 }
+
+/* ---------- the Florida painting in the lounge: the owner's picture (if any) goes in the frame for everyone ---------- */
+const PAINTING = "lounge/painting";
+function showPainting(url) {
+  $$(".lounge-painting").forEach(img => { if (url) { img.src = url; img.hidden = false; } else { img.removeAttribute("src"); img.hidden = true; } });
+}
+function loadPainting() {
+  const { data } = supabase.storage.from("nightshop-artwork").getPublicUrl(PAINTING);
+  const url = data.publicUrl + "?v=" + Math.floor(Date.now() / 60000);
+  const probe = new Image();
+  probe.onload = () => showPainting(url);
+  probe.src = url;                                           // a 404 just keeps the built-in gator
+}
+loadPainting();
 
 /* ---------- first load, then check for news every 15 seconds ---------- */
 await Promise.all([refreshStatus(), loadOrders(), loadMessages(), loadOwnerOrders(), loadOwnerMessages()]);

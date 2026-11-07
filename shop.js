@@ -366,6 +366,9 @@ function applyTheme() {
   pill.textContent = shopOpen ? "● OPEN" : "● CLOSED";
   pill.className = "pill " + (shopOpen ? "pill-open" : "pill-closed");
   $("#closed-veil").hidden = shopOpen;
+  let tint = document.querySelector("#closed-tint");
+  if (!tint) { tint = document.createElement("div"); tint.id = "closed-tint"; tint.setAttribute("aria-hidden", "true"); document.body.append(tint); }
+  tint.classList.toggle("on", statusKnown && !shopOpen);          // red over the whole screen while the shop is closed
   $$("[data-product]").forEach(button => { button.disabled = !shopOpen; button.hidden = !shopOpen; });
   if (!shopOpen) closeOrder();
   const lights = $("#toggle-shop");

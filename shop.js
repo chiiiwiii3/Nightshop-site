@@ -266,9 +266,10 @@ root.innerHTML = `
             <h3><span class="pf-ico">💬</span> Messages</h3>
             <button type="button" class="pf-row pf-from" data-pf="msg"><img src="./art/shadowman.jpg" alt=""><span>From: Shadowman<small>Tap to view message history</small></span><i>›</i></button>
             <div class="pf-sub" id="pf-msg" hidden>
-              <form id="pf-msg-form" class="msg-bar" autocomplete="off"><input name="message" maxlength="1000" placeholder="Message Shadowman…" autocomplete="off" required><button type="submit" aria-label="Send message">➤</button></form>
-              <p class="pf-note" id="pf-msg-note" aria-live="polite">Messages go privately to Shadowman.</p>
+              <div class="tabs pf-tabs" id="pf-msg-tabs"><button type="button" data-ptab="open" class="on">Open <span class="count" id="pf-count-open">0</span></button><button type="button" data-ptab="history">History <span class="count" id="pf-count-history">0</span></button></div>
               <div id="pf-msg-list" class="stack"></div>
+              <p class="pf-note">To start a new conversation, go see Shadowman in the bathroom.</p>
+              <button type="button" class="pf-btn" id="pf-to-bath">🚪 See Shadowman</button>
             </div>
           </section>
         </div>
@@ -623,6 +624,7 @@ async function loadLedger() {
   const { data, error } = await supabase.from("ledger").select("id,amount,note,created_at").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(200);
   if (!error) myLedger = data || [];
 }
+let pfTab = "open";
 function renderProfile() {
   $("#pf-name").textContent = profile.display_name || "Member";
   paintAvatars();
@@ -632,8 +634,12 @@ function renderProfile() {
   $("#pf-due").classList.toggle("owes", due > 0);
   $("#pf-due-note").textContent = due > 0 ? "Balance owed to the shop" : due < 0 ? "Credit on your account" : "No Balance Due";
   $("#pf-ledger").innerHTML = myLedger.slice(0, 12).map(r => `<div class="bal-entry"><span>${when(r.created_at)}</span><span>${safe(r.note || (Number(r.amount) > 0 ? "Charge" : "Payment"))}</span><b class="${Number(r.amount) > 0 ? "owes" : "paid"}">${Number(r.amount) > 0 ? "+" : "−"}${money(Math.abs(r.amount))}</b></div>`).join("");
-  const plain = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)) && !hasDone(m));
-  $("#pf-msg-list").innerHTML = plain.slice(0, 30).map(m => `<div class="row-card"><div><b>You</b><small>${safe(m.message)}</small>${replyLines(m.reply).length ? `<div class="reply">🕴️ ${safe(replyLines(m.reply).join("\n"))}</div>` : ""}</div></div>`).join("") || "<p class=\"pf-note\">No messages yet.</p>";
+  const mine = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)));
+  const openConvos = mine.filter(m => !hasDone(m)), history = mine.filter(hasDone);
+  $("#pf-count-open").textContent = openConvos.length; $("#pf-count-history").textContent = history.length;
+  $$("#pf-msg-tabs [data-ptab]").forEach(btn => btn.classList.toggle("on", btn.dataset.ptab === pfTab));
+  const shown = pfTab === "history" ? history : openConvos;
+  $("#pf-msg-list").innerHTML = shown.slice(0, 30).map(m => `<div class="row-card"><div><b>You</b><small>${safe(m.message)}</small>${replyLines(m.reply).length ? `<div class="reply">🕴️ ${safe(replyLines(m.reply).join("\n"))}</div>` : ""}</div></div>`).join("") || `<p class="pf-note">${pfTab === "history" ? "No past conversations." : "No open conversations."}</p>`;
   const hasPin = Boolean(getPin());
   $("#pf-pin-state").textContent = hasPin ? "(On · tap to change)" : "(For phone security)";
   $("#pf-pin-form").elements.cur.hidden = !hasPin; $("#pf-pin-form").elements.cur.required = hasPin; $("#pf-pin-off").hidden = !hasPin;
@@ -642,21 +648,15 @@ function openProfile() {
   Promise.all([loadOrders(), loadMessages(), loadLedger()]).finally(renderProfile);
   renderProfile();
   Object.values(SUBS).forEach(sel => { $(sel).hidden = true; });
-  if (!isOwner) $("#pf-msg").hidden = false;               // the message box is open as soon as the profile opens
+  if (!isOwner) $("#pf-msg").hidden = false;               // the conversations are open as soon as the profile opens
   profileSheet.hidden = false;
 }
 $("#open-profile").addEventListener("click", openProfile);
 $("#profile-close").addEventListener("click", closeProfile);
 $("#pf-close2").addEventListener("click", closeProfile);
 profileSheet.addEventListener("click", event => { if (event.target.id === "profile-sheet") closeProfile(); });
-$("#pf-msg-form").addEventListener("submit", async event => {
-  event.preventDefault();
-  const input = event.target.elements.message, note = $("#pf-msg-note"), message = input.value.trim(); if (!message) return;
-  note.textContent = "Sending…";
-  const { error } = await supabase.from("messages").insert({ customer_id: user.id, message });
-  note.textContent = error ? "Message could not be sent." : "Sent privately to Shadowman.";
-  if (!error) { input.value = ""; await loadMessages(); renderProfile(); }
-});
+$("#pf-to-bath").addEventListener("click", () => { closeProfile(); bathSheet.hidden = false; });
+$("#pf-msg-tabs").addEventListener("click", event => { const btn = event.target.closest("[data-ptab]"); if (btn) { pfTab = btn.dataset.ptab; renderProfile(); } });
 paintAvatars();
 
 const SUBS = { pw: "#pf-pw", pin: "#pf-pin", app: "#pf-app", msg: "#pf-msg" };

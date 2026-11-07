@@ -76,12 +76,12 @@ footer{color:#777f91}
 @media(max-width:560px){.window-message{position:static;width:100%;box-shadow:none}}
 
 /* FULL SCREEN: the storefront fills the whole screen (cropped, never distorted); the title floats over it */
-body>header{position:absolute;top:0;left:0;right:0;z-index:6;padding:16px 12px 40px;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.7),transparent)}
+body>header{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}   /* no words over the storefront (kept for screen readers) */
 body>header .crest{font-size:30px}body>header h1{margin:2px 0;font-size:clamp(20px,5vw,32px)}
 main{width:100%;max-width:none;margin:0 0 30px}
 main #street-scene{max-width:none;height:100vh;height:100svh;margin:0;border:0;box-shadow:none}
 main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:max(100vw,calc(100svh * 1672 / 941));height:max(100svh,calc(100vw * 941 / 1672));transform:translate(-50%,-50%)}
-#street-scene .tap-hint{bottom:3%;font-size:clamp(9px,2.4vw,13px)}
+#street-scene .tap-hint{position:absolute;opacity:0;pointer-events:none}
 #street-scene .window-message{position:absolute;right:2%;bottom:8%}
 #shop-app{width:min(100% - 20px,1100px);margin:0 auto}
 </style>
@@ -96,7 +96,7 @@ main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
-<link rel="stylesheet" href="./shop.css?v=nightshop-bal-12">
+<link rel="stylesheet" href="./shop.css?v=nightshop-clean-13">
 </head>
 <body>
 <header>
@@ -141,7 +141,7 @@ main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:
 </div>
  <section id="shop-app"></section>
 </main>
-<footer>LU’S LOUNGE · PRIVATE ESTABLISHMENT<br><button type="button" id="install-btn" class="install-btn" hidden>📲 INSTALL THE APP</button></footer>
+<footer><button type="button" id="install-btn" class="install-btn" hidden>📲 INSTALL THE APP</button></footer>
 <script>
 /* Entrance: the door swings open into a full-screen login (no scrolling) */
 const entry = document.querySelector("#entry");
@@ -179,7 +179,7 @@ document.querySelector("#close-window")?.addEventListener("click", () => {
   if (windowMessage) windowMessage.hidden = true;
 });
 </script>
-<script type="module" src="./pwa.js?v=nightshop-bal-12"></script>
-<script type="module" src="./login.js?v=nightshop-bal-12"></script>
+<script type="module" src="./pwa.js?v=nightshop-clean-13"></script>
+<script type="module" src="./login.js?v=nightshop-clean-13"></script>
 </body>
 </html>

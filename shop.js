@@ -236,9 +236,13 @@ function setPan(value) {
 function layout() {
   const vw = viewport.clientWidth;
   if (!vw) return;                                          // shop not on screen yet; the observer below calls us again
-  const height = Math.max(Math.min(Math.max(vw / RATIO, 320), Math.round(window.innerHeight * 0.62), 560), vw / RATIO);
+  // fill the rest of the first screen; the picture covers it (cropped, never distorted)
+  const top = viewport.getBoundingClientRect().top + window.scrollY;
+  const target = Math.max(320, Math.round(window.innerHeight - top));
+  const height = Math.max(target, vw / RATIO);
   const width = height * RATIO, before = picW;
-  viewport.style.height = height + "px";
+  viewport.style.height = target + "px";
+  world.style.marginTop = (-(height - target) / 2) + "px";
   world.style.width = (width * 3) + "px";
   world.style.height = height + "px";
   world.style.setProperty("--wu", (width / 100) + "px");     // 1% of the picture's width, so the holograms scale with the scene

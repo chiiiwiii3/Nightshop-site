@@ -225,3 +225,56 @@ body.entry-open{overflow:hidden}
 
 /* full-width lounge picture */
 .nsx .lounge{width:100vw;margin-left:calc(50% - 50vw);border-radius:0;border-left:0;border-right:0}
+
+/* ---------- profile menu (green marble + gold, from the template) ---------- */
+.avatar-btn{width:40px;height:40px;padding:0;border-radius:50%;overflow:hidden;border:2px solid #e9b93a;background:radial-gradient(circle,#0b5a2c,#032312);box-shadow:0 0 12px rgba(56,255,122,.55);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.avatar-btn svg,.avatar-btn img{width:100%;height:100%;object-fit:cover;display:block}
+.sheet.profile-sheet{align-items:center;overflow:auto}
+.sheet .sheet-card.pf-card{width:min(calc(100% - 16px),760px);max-height:calc(100vh - 16px);margin:8px 0;padding:40px 14px 16px;text-align:left;border:3px solid #e9b93a;border-image:none;border-radius:26px;background:radial-gradient(130% 90% at 15% 0,#0d6b36 0,#06371c 45%,#031a0e 100%);box-shadow:inset 0 0 0 2px #04200f,inset 0 0 0 4px #c8962a,0 0 26px rgba(56,255,122,.55),0 14px 40px #000;filter:none;overflow:auto;position:relative}
+.pf-plaque{position:absolute;left:50%;top:-4px;transform:translateX(-50%);padding:2px 36px 6px;border:3px solid #e9b93a;border-top:0;border-radius:0 0 26px 26px;background:linear-gradient(#0a4a25,#04200f);box-shadow:0 6px 18px #000a,inset 0 0 12px #000a;z-index:2}
+.pf-plaque h2{margin:0;font:italic 700 clamp(34px,9vw,52px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:1px;background:linear-gradient(#fff3b0,#f2b92a 55%,#b9780f);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 2px #000)}
+.sheet .pf-card .sheet-close{position:absolute;top:6px;right:6px;width:46px;height:46px;opacity:1;border-radius:50%;border:3px solid #e9b93a;background:radial-gradient(circle,#17331f,#000);color:#f6c744;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:3;box-shadow:0 0 12px rgba(0,0,0,.8)}
+.pf-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:34px}
+@media(min-width:680px){.pf-grid{grid-template-columns:5fr 7fr;align-items:start}}
+.pf-left,.pf-right{display:flex;flex-direction:column;gap:12px}
+.pf-box{border:2px solid #e9b93a;border-radius:18px;padding:12px;background:linear-gradient(160deg,rgba(2,18,10,.92),rgba(0,0,0,.95));box-shadow:inset 0 0 14px rgba(0,0,0,.9),0 0 8px rgba(233,185,58,.25)}
+.pf-box h3{margin:0 0 8px;padding-bottom:4px;border-bottom:2px solid #e9b93a;font:italic 700 26px Georgia,serif;color:#f6c744;text-shadow:0 2px 3px #000;display:flex;align-items:center;gap:8px}
+.pf-ico{font-style:normal;font-size:22px}
+.pf-me{text-align:center}
+.pf-avatar{width:132px;height:132px;margin:2px auto 6px;border-radius:50%;border:4px solid #e9b93a;background:radial-gradient(circle at 50% 45%,#12ff6b66,#06452266 55%,#021a0e);box-shadow:0 0 22px rgba(56,255,122,.7);overflow:hidden}
+.pf-avatar svg{width:100%;height:100%;filter:drop-shadow(0 0 8px #3dff80)}.pf-avatar img{width:100%;height:100%;object-fit:cover}
+.pf-name{font:700 30px Georgia,serif;color:#f6c744;text-shadow:0 2px 3px #000;margin-bottom:8px;word-break:break-word}
+.nsx .pf-btn{width:100%;padding:11px 12px;border:2px solid #e9b93a;border-radius:14px;background:linear-gradient(#201a08,#080602);color:#f6c744;font:italic 700 19px Georgia,serif;text-transform:none;letter-spacing:0;box-shadow:inset 0 0 10px #000,0 0 8px rgba(233,185,58,.25);cursor:pointer}
+.nsx .pf-btn:hover{filter:brightness(1.25)}
+.nsx .pf-danger-lite{margin-top:8px;font-size:16px;border-color:#c0392b;color:#ff8d84}
+.pf-balance h3{justify-content:center;border:0}
+.pf-money{display:flex;align-items:center;justify-content:center;gap:12px}
+.pf-coin{width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#e9a417 60%,#8a5a06);color:#3a2504;font:700 34px Georgia,serif;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px #000}
+.pf-money b{display:block;font:700 38px Arial,sans-serif;color:#2dff8a;text-shadow:0 0 10px rgba(45,255,138,.6)}
+.pf-money b.owes{color:#ffb347;text-shadow:0 0 10px rgba(255,179,71,.6)}
+.pf-money small{color:#e8eee9;font-size:13px}
+.pf-close{margin-top:0}
+.nsx .pf-row{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:12px 6px;border:0;border-bottom:1px solid rgba(233,185,58,.55);border-radius:0;background:transparent;color:#fff;font:600 19px Arial,sans-serif;text-align:left;text-transform:none;letter-spacing:0;box-shadow:none;cursor:pointer}
+.nsx .pf-row:hover{background:rgba(255,255,255,.05);filter:none;box-shadow:none}
+.pf-row span:not(.pf-ico){flex:1}.pf-row small{display:block;margin-top:2px;font:italic 14px Georgia,serif;color:#f1d98a}
+.pf-row i{font-style:normal;font-size:30px;line-height:1;color:#f6c744}
+.pf-del span:not(.pf-ico){color:#ff6a60}
+.pf-from img{width:60px;height:56px;border-radius:8px;border:2px solid #38ff7a;object-fit:cover}
+.pf-sub{padding:8px 4px 10px}.pf-sub[hidden]{display:none}
+.pf-sub input{width:100%;margin:0 0 8px;padding:12px;border:1px solid #c8962a;border-radius:10px;background:#020a05;color:#fff;font-size:16px}
+.pf-note{margin:6px 0 0;font-size:13px;color:#cfe8d6;min-height:16px}
+#pf-msg-list{max-height:220px;overflow:auto;text-align:left}
+.pf-sub #app-panel h2{font:italic 700 20px Georgia,serif;color:#f6c744;margin:0 0 6px}
+
+/* PIN lock screen */
+.pin-lock{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 90% at 50% 0,#0b4a26,#020a05 70%)}
+.pin-box{width:min(92vw,340px);text-align:center;color:#f6c744;font-family:Georgia,serif}
+.pin-crest{font-size:44px;text-shadow:0 0 14px #f6c744}.pin-box h2{margin:4px 0;letter-spacing:5px;font-weight:400}.pin-box p{margin:0 0 14px;color:#cfe8d6;font:14px Arial}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:20px}.pin-dots i{width:16px;height:16px;border-radius:50%;border:2px solid #e9b93a}.pin-dots i.on{background:#e9b93a;box-shadow:0 0 10px #e9b93a}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.pin-pad button{height:64px;border-radius:50%;border:2px solid #e9b93a;background:radial-gradient(circle,#12331f,#03110a);color:#f6c744;font:700 26px Georgia,serif;box-shadow:inset 0 0 10px #000;text-transform:none}
+.pin-pad button:active{background:#e9b93a;color:#000}
+.pin-forgot{margin-top:18px;background:none;border:0;color:#9fc8ad;font:13px Arial;text-decoration:underline;box-shadow:none;text-transform:none}
+.pin-box.shake{animation:pin-shake .4s}@keyframes pin-shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.pin-pad button{width:68px;height:68px;justify-self:center;padding:0}
+.pin-box h2{color:#f6c744;text-shadow:0 0 12px rgba(246,199,68,.5)}

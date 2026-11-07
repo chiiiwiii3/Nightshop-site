@@ -5,7 +5,7 @@ const { data: { user } } = await supabase.auth.getUser();
 if (!user || !root) throw new Error("Member session unavailable");
 
 const { data: profile, error: profileError } = await supabase.from("profiles")
-  .select("display_name,is_owner,access_enabled").eq("id", user.id).single();
+  .select("display_name,is_owner,access_enabled,avatar").eq("id", user.id).single();
 if (profileError || !profile) {
   console.error("Profile load failed:", profileError);
   throw new Error("Could not load your member profile. Ask the owner to check your account.");
@@ -119,7 +119,7 @@ root.innerHTML = `
 <div class="nsx">
   <header class="nsx-top">
     <div class="nsx-brand"><span class="nsx-crest">♛</span><div><h1>LU’S LOUNGE</h1><p>Welcome in, ${safe(profile.display_name || "member")}</p></div></div>
-    <div class="nsx-actions"><span id="shop-pill" class="pill">Checking…</span><button id="sign-out" class="ghost" type="button">Sign out</button></div>
+    <div class="nsx-actions"><button id="open-profile" class="avatar-btn" type="button" aria-label="Open your profile"></button><span id="shop-pill" class="pill">Checking…</span><button id="sign-out" class="ghost" type="button">Sign out</button></div>
   </header>
 
   <section class="lounge" aria-label="Lu’s Lounge lounge">
@@ -154,7 +154,6 @@ root.innerHTML = `
     <div id="order-history" class="stack">Loading…</div>
   </section>
 
-  <section class="panel" id="app-panel" hidden></section>
 
   ${ownerMarkup}
 
@@ -212,6 +211,63 @@ root.innerHTML = `
       <p id="message-note" aria-live="polite" class="small"></p>
       <button type="button" class="ghost" id="clear-chat" hidden>🗑 Delete my conversation with the shadow</button>
       <div id="message-history" class="stack"></div>
+    </div>
+  </div>
+  <div class="sheet profile-sheet" id="profile-sheet" hidden>
+    <div class="sheet-card pf-card" role="dialog" aria-modal="true" aria-labelledby="pf-title">
+      <button type="button" class="sheet-close" id="profile-close" aria-label="Close profile">✕</button>
+      <div class="pf-plaque"><h2 id="pf-title">Profile</h2></div>
+      <div class="pf-grid">
+        <div class="pf-left">
+          <section class="pf-box pf-me">
+            <div class="pf-avatar" id="pf-avatar"></div>
+            <div class="pf-name" id="pf-name"></div>
+            <button type="button" class="pf-btn" id="pf-photo">📷 Add Profile Photo</button>
+            <input type="file" id="pf-file" accept="image/*" hidden>
+          </section>
+          <section class="pf-box pf-balance" id="pf-balance-box">
+            <h3>Balance</h3>
+            <div class="pf-money"><span class="pf-coin">$</span><div><b id="pf-due">$0.00</b><small id="pf-due-note">No Balance Due</small></div></div>
+          </section>
+          <button type="button" class="pf-btn pf-close" id="pf-close2">✕ Close Profile</button>
+        </div>
+        <div class="pf-right">
+          <section class="pf-box pf-settings">
+            <h3><span class="pf-ico">⚙</span> Settings</h3>
+            <button type="button" class="pf-row" data-pf="pw"><span class="pf-ico">🔒</span><span>Change Password</span><i>›</i></button>
+            <form class="pf-sub" id="pf-pw" hidden autocomplete="off">
+              <input type="password" name="a" placeholder="New password" minlength="8" maxlength="128" autocomplete="new-password" required>
+              <input type="password" name="b" placeholder="Type it again" minlength="8" maxlength="128" autocomplete="new-password" required>
+              <button type="submit" class="pf-btn">Save new password</button>
+              <p class="pf-note" id="pf-pw-note" aria-live="polite"></p>
+            </form>
+            <button type="button" class="pf-row" data-pf="pin"><span class="pf-ico">🛡️</span><span>App Lock PIN<small id="pf-pin-state">(For phone security)</small></span><i>›</i></button>
+            <div class="pf-sub" id="pf-pin" hidden>
+              <form id="pf-pin-form" autocomplete="off">
+                <input type="password" inputmode="numeric" pattern="[0-9]*" name="cur" placeholder="Current PIN" maxlength="6" autocomplete="off" hidden>
+                <input type="password" inputmode="numeric" pattern="[0-9]*" name="a" placeholder="New PIN (4–6 digits)" maxlength="6" minlength="4" autocomplete="off" required>
+                <input type="password" inputmode="numeric" pattern="[0-9]*" name="b" placeholder="Type it again" maxlength="6" minlength="4" autocomplete="off" required>
+                <button type="submit" class="pf-btn">Save PIN</button>
+              </form>
+              <button type="button" class="pf-btn pf-danger-lite" id="pf-pin-off" hidden>Remove PIN</button>
+              <p class="pf-note" id="pf-pin-note" aria-live="polite">The PIN works on this phone only. The app asks for it each time you open it.</p>
+            </div>
+            <button type="button" class="pf-row" data-pf="app"><span class="pf-ico">📲</span><span>App &amp; Alerts</span><i>›</i></button>
+            <div class="pf-sub" id="pf-app" hidden><div id="app-panel"></div></div>
+            <button type="button" class="pf-row" data-pf="out"><span class="pf-ico">🚪</span><span>Sign out</span><i>›</i></button>
+            <button type="button" class="pf-row pf-del" data-pf="del" id="pf-del-row"><span class="pf-ico">🗑</span><span>Delete Account</span><i>›</i></button>
+          </section>
+          <section class="pf-box pf-messages" id="pf-msg-box">
+            <h3><span class="pf-ico">💬</span> Messages</h3>
+            <button type="button" class="pf-row pf-from" data-pf="msg"><img src="./art/shadowman.jpg" alt=""><span>From: Shadowman<small>Tap to view message history</small></span><i>›</i></button>
+            <div class="pf-sub" id="pf-msg" hidden>
+              <div id="pf-msg-list" class="stack"></div>
+              <p class="pf-note">To send a new message, go through Shadowman in the bathroom.</p>
+              <button type="button" class="pf-btn" id="pf-to-bath">🚪 Go to the bathroom</button>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
   </div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
@@ -378,7 +434,7 @@ const closeBath = () => { bathSheet.hidden = true; };
 root.addEventListener("click", event => { if (event.target.closest("[data-bath]")) { if (dragged) return; bathSheet.hidden = false; } });
 $("#bath-close").addEventListener("click", closeBath);
 bathSheet.addEventListener("click", event => { if (event.target.id === "bath-sheet") closeBath(); });
-document.addEventListener("keydown", event => { if (event.key === "Escape") { closeBath(); closeOrder(); closeFulfil(); closeThread(); } });
+document.addEventListener("keydown", event => { if (event.key === "Escape") { closeProfile(); closeBath(); closeOrder(); closeFulfil(); closeThread(); } });
 
 $("#order-close").addEventListener("click", closeOrder);
 $("#order-sheet").addEventListener("click", event => { if (event.target.id === "order-sheet") closeOrder(); });
@@ -541,6 +597,127 @@ $("#order-history").addEventListener("click", event => {
   const button = event.target.closest("[data-thread]"); if (button) openThread(button.dataset.thread);
 });
 
+/* ---------- profile menu ---------- */
+const profileSheet = $("#profile-sheet");
+const closeProfile = () => { profileSheet.hidden = true; };
+let myAvatar = typeof profile.avatar === "string" && profile.avatar.startsWith("data:image/jpeg;base64,") ? profile.avatar : "";
+const SILHOUETTE = '<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="38" r="17" fill="#021208"/><path d="M14 98c2-26 18-36 36-36s34 10 36 36z" fill="#021208"/></svg>';
+function paintAvatars() {
+  for (const el of [$("#pf-avatar"), $("#open-profile")]) {
+    el.textContent = "";
+    if (myAvatar) { const img = new Image(); img.alt = ""; img.src = myAvatar; el.append(img); } else el.innerHTML = SILHOUETTE;
+  }
+}
+const isOwed = o => { const st = cls(o.status); return !o.paid && (st === "confirmed" || st === "done" || (st !== "denied" && isDone(o, threadFor(o.id, myMessages)))); };
+function renderProfile() {
+  $("#pf-name").textContent = profile.display_name || "Member";
+  paintAvatars();
+  $("#pf-balance-box").hidden = isOwner; $("#pf-msg-box").hidden = isOwner; $("#pf-del-row").hidden = isOwner;
+  const due = myOrders.filter(isOwed).reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+  $("#pf-due").textContent = money(due);
+  $("#pf-due").classList.toggle("owes", due > 0);
+  $("#pf-due-note").textContent = due > 0 ? "Please settle up with the shop" : "No Balance Due";
+  const plain = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)) && !hasDone(m));
+  $("#pf-msg-list").innerHTML = plain.slice(0, 30).map(m => `<div class="row-card"><div><b>You</b><small>${safe(m.message)}</small>${replyLines(m.reply).length ? `<div class="reply">🕴️ ${safe(replyLines(m.reply).join("\n"))}</div>` : ""}</div></div>`).join("") || "<p class=\"pf-note\">No messages yet.</p>";
+  const hasPin = Boolean(getPin());
+  $("#pf-pin-state").textContent = hasPin ? "(On · tap to change)" : "(For phone security)";
+  $("#pf-pin-form").elements.cur.hidden = !hasPin; $("#pf-pin-form").elements.cur.required = hasPin; $("#pf-pin-off").hidden = !hasPin;
+}
+function openProfile() {
+  Promise.all([loadOrders(), loadMessages()]).finally(renderProfile);
+  renderProfile();
+  profileSheet.hidden = false;
+}
+$("#open-profile").addEventListener("click", openProfile);
+$("#profile-close").addEventListener("click", closeProfile);
+$("#pf-close2").addEventListener("click", closeProfile);
+profileSheet.addEventListener("click", event => { if (event.target.id === "profile-sheet") closeProfile(); });
+$("#pf-to-bath").addEventListener("click", () => { closeProfile(); bathSheet.hidden = false; });
+paintAvatars();
+
+const SUBS = { pw: "#pf-pw", pin: "#pf-pin", app: "#pf-app", msg: "#pf-msg" };
+profileSheet.addEventListener("click", async event => {
+  const row = event.target.closest("[data-pf]"); if (!row) return;
+  const key = row.dataset.pf;
+  if (SUBS[key]) { const box = $(SUBS[key]); const open = box.hidden; Object.values(SUBS).forEach(sel => { $(sel).hidden = true; }); box.hidden = !open; return; }
+  if (key === "out") { $("#sign-out").click(); return; }
+  if (key === "del") {
+    if (!(await ask("Delete your account? You will be signed out and will not be able to log back in. Your past orders stay in the shop's records.", "Delete my account"))) return;
+    const { error } = await supabase.rpc("delete_my_account");
+    if (error) { console.error(error); toast("Could not delete the account. Try again.", "alert"); return; }
+    try { localStorage.removeItem(PIN_KEY); await window.nightshopPwa?.release?.(supabase); } catch { /* ignore */ }
+    await supabase.auth.signOut(); location.reload();
+  }
+});
+
+/* profile photo: pick, shrink to a small square, save */
+$("#pf-photo").addEventListener("click", () => $("#pf-file").click());
+$("#pf-file").addEventListener("change", async event => {
+  const file = event.target.files[0]; event.target.value = ""; if (!file) return;
+  try {
+    const bmp = await createImageBitmap(file);
+    const side = Math.min(bmp.width, bmp.height), size = 256, c = document.createElement("canvas"); c.width = c.height = size;
+    c.getContext("2d").drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, size, size);
+    const url = c.toDataURL("image/jpeg", 0.82);
+    const { error } = await supabase.rpc("set_my_avatar", { p_avatar: url });
+    if (error) throw error;
+    myAvatar = url; paintAvatars(); toast("Profile photo saved.");
+  } catch (e) { console.error(e); toast("That photo could not be saved.", "alert"); }
+});
+
+/* change password */
+$("#pf-pw").addEventListener("submit", async event => {
+  event.preventDefault();
+  const f = event.target, note = $("#pf-pw-note");
+  if (f.elements.a.value !== f.elements.b.value) { note.textContent = "The two passwords don't match."; return; }
+  const { error } = await supabase.auth.updateUser({ password: f.elements.a.value });
+  if (error) { console.error(error); note.textContent = "Could not change it: " + (error.message || "try again"); return; }
+  f.reset(); note.textContent = ""; $("#pf-pw").hidden = true; toast("Password changed. 🔒");
+});
+
+/* app lock PIN: kept on this phone only (a salted hash, never the PIN itself) */
+const PIN_KEY = "lulounge-pin-v1";
+function getPin() { try { return JSON.parse(localStorage.getItem(PIN_KEY) || "null"); } catch { return null; } }
+async function sha(text) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join(""); }
+async function savePin(pin) { const salt = [...crypto.getRandomValues(new Uint8Array(8))].join("-"); localStorage.setItem(PIN_KEY, JSON.stringify({ salt, len: pin.length, hash: await sha(salt + pin) })); }
+async function pinOk(pin) { const p = getPin(); return Boolean(p) && (await sha(p.salt + pin)) === p.hash; }
+$("#pf-pin-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const f = event.target, note = $("#pf-pin-note"), a = f.elements.a.value, b = f.elements.b.value;
+  if (getPin() && !(await pinOk(f.elements.cur.value))) { note.textContent = "Your current PIN isn't right."; return; }
+  if (!/^\d{4,6}$/.test(a)) { note.textContent = "Use 4 to 6 digits."; return; }
+  if (a !== b) { note.textContent = "The two PINs don't match."; return; }
+  await savePin(a); f.reset(); $("#pf-pin").hidden = true; renderProfile(); toast("App Lock is on for this phone. 🛡️");
+});
+$("#pf-pin-off").addEventListener("click", async () => {
+  const cur = $("#pf-pin-form").elements.cur.value, note = $("#pf-pin-note");
+  if (!(await pinOk(cur))) { note.textContent = "Type your current PIN above to remove it."; return; }
+  localStorage.removeItem(PIN_KEY); $("#pf-pin-form").reset(); $("#pf-pin").hidden = true; renderProfile(); toast("App Lock turned off.");
+});
+let lockEl = null, hiddenAt = 0;
+function showLock() {
+  const pin = getPin(); if (!pin || lockEl) return;
+  lockEl = document.createElement("div"); lockEl.className = "pin-lock"; lockEl.setAttribute("role", "dialog"); lockEl.setAttribute("aria-label", "Enter your PIN");
+  lockEl.innerHTML = '<div class="pin-box"><div class="pin-crest">♛</div><h2>LU’S LOUNGE</h2><p>Enter your PIN</p><div class="pin-dots">' + "<i></i>".repeat(pin.len) + '</div><div class="pin-pad">' +
+    [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" data-k="${n}">${n}</button>`).join("") + '<span></span><button type="button" data-k="0">0</button><button type="button" data-k="x" aria-label="Delete">⌫</button></div><button type="button" class="pin-forgot">Forgot PIN? Sign out</button></div>';
+  document.body.append(lockEl);
+  let buf = "", fails = 0;
+  const dots = () => [...lockEl.querySelectorAll(".pin-dots i")].forEach((d, i) => d.classList.toggle("on", i < buf.length));
+  lockEl.addEventListener("click", async e => {
+    if (e.target.closest(".pin-forgot")) { localStorage.removeItem(PIN_KEY); lockEl.remove(); lockEl = null; $("#sign-out").click(); return; }
+    const k = e.target.closest("[data-k]")?.dataset.k; if (k == null) return;
+    if (k === "x") buf = buf.slice(0, -1); else if (buf.length < pin.len) buf += k;
+    dots();
+    if (buf.length === pin.len) {
+      if (await pinOk(buf)) { lockEl.remove(); lockEl = null; return; }
+      fails++; buf = ""; lockEl.querySelector(".pin-box").classList.add("shake"); setTimeout(() => { lockEl?.querySelector(".pin-box")?.classList.remove("shake"); dots(); }, 400);
+      if (fails >= 5) { localStorage.removeItem(PIN_KEY); lockEl.remove(); lockEl = null; $("#sign-out").click(); }   // too many tries: sign in with the password again
+    }
+  });
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) hiddenAt = Date.now(); else if (hiddenAt && Date.now() - hiddenAt > 30000) showLock(); });
+showLock();
+
 /* ---------- member: order history + replies ---------- */
 const seenOrders = new Map();
 let ordersLoaded = false, myOrders = [], myMessages = [];
@@ -574,7 +751,7 @@ function showOrder(id) {
   } else { setMyTab("active"); openThread(id); }
 }
 async function loadOrders() {
-  const { data, error } = await supabase.from("orders").select("id,item,quantity,total_amount,status,created_at")
+  const { data, error } = await supabase.from("orders").select("id,item,quantity,total_amount,status,created_at,paid")
     .eq("customer_id", user.id).order("created_at", { ascending: false }).limit(60);
   if (error) { $("#order-history").textContent = "Could not load orders."; return; }
   myOrders = data || [];
@@ -723,13 +900,13 @@ if (isOwner) {
         ? `<div class="thread-box"><span class="fulfil-tag">CONVERSATION</span><div class="chat">${ownerBubbles(thread, name)}</div>${done ? '<div class="bubble sys">✅ Done</div>' : `<form class="msg-bar small-bar" data-msg="${safe(target.id ?? "")}" data-append="1"><input data-draft="r:${safe(target.id ?? "")}" name="reply" maxlength="500" placeholder="Reply to ${safe(name)}…" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></form>`}</div>`
         : '<small class="pending-note">No conversation yet (older order)</small>';
       const pill = done ? '<span class="status status-done">Done ✅</span>' : `<span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span>`;
-      return `<div class="row-card order-card ${!done && cls(o.status) === "pending" ? "is-new" : ""} ${done ? "is-done" : ""}" data-order-card="${safe(o.id)}"><div><b>${safe(o.item)}</b><small>${safe(name)} · ${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}<div class="decide">${done ? `<button type="button" class="d-wait" data-reopen="${safe(o.id)}">↩ Reopen</button>` : `<button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied" ${cls(o.status) === "denied" ? "disabled" : ""}>Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button><button type="button" class="d-done" data-done="${safe(o.id)}">Done</button>`}</div>${chat}</div>`;
+      return `<div class="row-card order-card ${!done && cls(o.status) === "pending" ? "is-new" : ""} ${done ? "is-done" : ""}" data-order-card="${safe(o.id)}"><div><b>${safe(o.item)}</b><small>${safe(name)} · ${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}<div class="decide">${done ? `<button type="button" class="d-wait" data-reopen="${safe(o.id)}">↩ Reopen</button>` : `<button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied" ${cls(o.status) === "denied" ? "disabled" : ""}>Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button><button type="button" class="d-done" data-done="${safe(o.id)}">Done</button>`}${cls(o.status) === "denied" ? "" : `<button type="button" class="${o.paid ? "d-wait" : "d-confirm"}" data-paid="${safe(o.id)}" data-to="${!o.paid}">${o.paid ? "💵 Paid ✓ · undo" : "💵 Mark paid"}</button>`}</div>${chat}</div>`;
     }).join("") || (ownerTab === "history" ? "No past orders yet." : "No open orders."));
   }
   const orderCard = id => $('#owner-orders [data-order-card="' + id + '"]');
 
   loadOwnerOrders = async () => {
-    const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at").order("created_at", { ascending: false }).limit(100);
+    const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at,paid").order("created_at", { ascending: false }).limit(100);
     if (error) { $("#owner-orders").textContent = "Could not load orders."; return; }
     ownerOrders = data || [];
     await learnNames(ownerOrders.map(o => o.customer_id));
@@ -745,6 +922,13 @@ if (isOwner) {
   $("#owner-orders").addEventListener("click", async event => {
     const doneButton = event.target.closest("[data-done]");
     if (doneButton) { await markDone(doneButton.dataset.done); return; }
+    const paidButton = event.target.closest("[data-paid]");
+    if (paidButton) {
+      paidButton.disabled = true;
+      const { error } = await supabase.from("orders").update({ paid: paidButton.dataset.to === "true" }).eq("id", paidButton.dataset.paid);
+      if (error) { console.error(error); toast("Could not update payment.", "alert"); } else toast(paidButton.dataset.to === "true" ? "Marked paid." : "Marked unpaid.");
+      await loadOwnerOrders(); return;
+    }
     const reopenButton = event.target.closest("[data-reopen]");
     if (reopenButton) { await reopenOrder(reopenButton.dataset.reopen); return; }
     const button = event.target.closest("[data-order]"); if (!button) return;

@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-hall-27";
+const SHOP_VERSION = "nightshop-hall-28";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
@@ -35,6 +35,29 @@ questionForm?.addEventListener("submit", async event => {
   }
   status.textContent = "Sent. The owner will get back to you.";
   questionForm.reset();
+});
+
+// Join with an invite code + PIN (the owner makes these in Controls).
+const joinSheet = document.querySelector("#join-sheet"), joinForm = document.querySelector("#join-form");
+document.querySelector("#join-open")?.addEventListener("click", () => { joinSheet.hidden = false; });
+document.querySelector("#join-close")?.addEventListener("click", () => { joinSheet.hidden = true; });
+joinForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const status = document.querySelector("#join-status"), btn = document.querySelector("#join-button"), f = joinForm.elements;
+  btn.disabled = true; status.textContent = "Creating your account…";
+  try {
+    const response = await fetch(SUPABASE_URL + "/functions/v1/redeem-invitation", {
+      method: "POST", headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY },
+      body: JSON.stringify({ code: f.code.value.trim(), pin: f.pin.value.trim(), username: f.username.value.trim(), password: f.password.value })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) { status.textContent = result.error || "That didn’t work. Check the code and PIN."; return; }
+    const name = f.username.value.trim();
+    joinForm.reset(); joinSheet.hidden = true;
+    if (form) { form.elements.username.value = name; form.elements.password.focus(); }
+    if (note) note.textContent = "Account created. Enter your password to come in.";
+  } catch (e) { status.textContent = "Couldn’t reach the shop. Check your connection and try again."; }
+  finally { btn.disabled = false; }
 });
 
 // Red sign = closed. Members can still sign in (profile + bathroom only); ordering is switched off inside.

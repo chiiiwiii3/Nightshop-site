@@ -96,7 +96,7 @@ main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
-<link rel="stylesheet" href="./shop.css?v=nightshop-hall-27">
+<link rel="stylesheet" href="./shop.css?v=nightshop-hall-28">
 </head>
 <body>
 <header>
@@ -133,6 +133,7 @@ main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:
 </section>
 <div id="entry" class="entry" hidden>
  <button type="button" id="entry-back" class="entry-back" aria-label="Close the door">✕ STEP BACK OUTSIDE</button>
+ <button type="button" id="join-open" class="entry-join">🎟 GOT AN INVITE?</button>
  <p id="entry-lock" class="entry-lock" hidden></p>
 <div class="hall-stage">
 <section id="login-door">
@@ -145,6 +146,21 @@ main .exterior-frame{position:absolute;left:50%;top:50%;aspect-ratio:auto;width:
   <p id="strike-note">Strikes: 0 / 3</p><p id="status-note">Awaiting credentials...</p>
  </section>
 </div>
+</div>
+ <div class="sheet" id="join-sheet" hidden>
+ <div class="sheet-card" style="--c:#ffd98a" role="dialog" aria-modal="true" aria-labelledby="join-title">
+  <button type="button" class="sheet-close" id="join-close" aria-label="Close">×</button>
+  <h2 id="join-title">JOIN LU’S LOUNGE</h2>
+  <p class="muted small">Enter the code and PIN the owner gave you, then pick your own username and password.</p>
+  <form id="join-form" autocomplete="off">
+   <input name="code" placeholder="Invite code" autocapitalize="characters" autocomplete="off" maxlength="48" required>
+   <input name="pin" placeholder="PIN" inputmode="numeric" autocomplete="off" maxlength="8" required>
+   <input name="username" placeholder="Choose a username" autocomplete="username" maxlength="24" required>
+   <input name="password" type="password" placeholder="Choose a password (12+ characters)" autocomplete="new-password" minlength="12" maxlength="128" required>
+   <button type="submit" id="join-button">CREATE MY ACCOUNT</button>
+  </form>
+  <p id="join-status" class="small" aria-live="polite"></p>
+ </div>
 </div>
  <section id="shop-app"></section>
 </main>
@@ -186,7 +202,7 @@ document.querySelector("#close-window")?.addEventListener("click", () => {
   if (windowMessage) windowMessage.hidden = true;
 });
 </script>
-<script type="module" src="./pwa.js?v=nightshop-hall-27"></script>
-<script type="module" src="./login.js?v=nightshop-hall-27"></script>
+<script type="module" src="./pwa.js?v=nightshop-hall-28"></script>
+<script type="module" src="./login.js?v=nightshop-hall-28"></script>
 </body>
 </html>

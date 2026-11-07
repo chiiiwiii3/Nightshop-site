@@ -1,4 +1,4 @@
-import { supabase } from "./supabase-client.js";
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
 const root = document.querySelector("#shop-app");
 const { data: { user } } = await supabase.auth.getUser();
@@ -112,6 +112,15 @@ const ownerControlsMarkup = isOwner ? `
     <div class="invite-box"><img id="invite-qr" src="./icons/invite-qr.svg" alt="Scan to join Lu’s Lounge" width="200" height="200"></div>
     <div class="app-row"><button type="button" id="invite-share">📤 Share invite</button><button type="button" class="ghost" id="invite-copy">Copy link</button></div>
     <p class="muted small" id="invite-note" aria-live="polite"></p>
+    <h3>ADD A MEMBER</h3>
+    <p class="muted small">Make a one-time invite code (good for 7 days, one person), or make the account yourself for someone who has no phone service.</p>
+    <button type="button" id="mem-invite" class="lights-btn">🎟 NEW INVITE CODE</button>
+    <div id="mem-code" class="mem-code" hidden></div>
+    <p class="muted small" style="margin-top:14px">Or create the account now. Give them the username and temporary password; they can change it in their profile.</p>
+    <input id="mem-user" placeholder="Username (3–24 letters or numbers)" maxlength="24" autocomplete="off" autocapitalize="off">
+    <input id="mem-pass" placeholder="Temporary password (12+ characters)" maxlength="128" autocomplete="off">
+    <button type="button" id="mem-create" class="ghost">Create account</button>
+    <p id="mem-status" class="small" aria-live="polite"></p>
     <h3>EXTERIOR ARTWORK</h3>
     <p class="muted small">Replace the storefront picture from your phone Gallery. JPG, PNG, or WebP · up to 15 MB.</p>
     <input id="exterior-upload" type="file" accept="image/jpeg,image/png,image/webp">
@@ -1193,6 +1202,48 @@ if (isOwner) {
     } finally {
       artworkInput.disabled = false;
     }
+  });
+
+
+  /* add a member: a one-time invite code + PIN, or an account made right here */
+  const callMembers = async payload => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch(SUPABASE_URL + "/functions/v1/owner-members", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + (session?.access_token || "") },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) throw new Error(result.error || "That didn’t work. Please try again.");
+    return result;
+  };
+  $("#mem-invite").addEventListener("click", async () => {
+    const btn = $("#mem-invite"), box = $("#mem-code"), status = $("#mem-status");
+    btn.disabled = true; status.textContent = "Making a code…";
+    try {
+      const { code, pin } = await callMembers({ action: "invite" });
+      const text = "Join Lu’s Lounge: " + inviteUrl() + "  Code: " + code + "  PIN: " + pin;
+      box.hidden = false;
+      box.innerHTML = `<div><span>CODE</span><b>${safe(code)}</b></div><div><span>PIN</span><b>${safe(pin)}</b></div><div class="app-row"><button type="button" data-mem-copy>Copy</button><button type="button" class="ghost" data-mem-share>📤 Share</button></div>`;
+      box.dataset.text = text;
+      status.textContent = "Shown once. Give it to one person. It stops working after 7 days or one use.";
+    } catch (e) { status.textContent = e.message; }
+    finally { btn.disabled = false; }
+  });
+  $("#mem-code").addEventListener("click", async event => {
+    const text = $("#mem-code").dataset.text || "";
+    if (event.target.closest("[data-mem-copy]")) { try { await navigator.clipboard.writeText(text); $("#mem-status").textContent = "Copied."; } catch { $("#mem-status").textContent = "Couldn’t copy. Read it off the screen instead."; } }
+    if (event.target.closest("[data-mem-share]")) { try { if (navigator.share) await navigator.share({ title: "Lu’s Lounge", text }); else $("#mem-status").textContent = "Sharing isn’t available here. Tap Copy instead."; } catch { /* cancelled */ } }
+  });
+  $("#mem-create").addEventListener("click", async () => {
+    const user = $("#mem-user"), pass = $("#mem-pass"), status = $("#mem-status"), btn = $("#mem-create");
+    btn.disabled = true; status.textContent = "Creating…";
+    try {
+      const result = await callMembers({ action: "create", username: user.value.trim(), password: pass.value });
+      status.textContent = result.message + " Password: " + pass.value;
+      user.value = ""; pass.value = "";
+    } catch (e) { status.textContent = e.message; }
+    finally { btn.disabled = false; }
   });
 
   /* owner: pick a picture, it is cropped to the frame's shape (cover) and shared with everyone */

@@ -358,3 +358,6 @@ body:has(#shop-app .nsx) footer{display:none}
 html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;overscroll-behavior:none;background:#000}
 #bath-sheet .sheet-card{background-size:contain;background-position:center}
 #bath-sheet .sheet-card{background-position:center 56px}
+/* bathroom: a little larger than "fit" – fills more of the screen without distortion; the shadowman stays in view */
+#bath-sheet .sheet-card{background-size:auto 58svh;background-position:84% 56px}
+@media(min-aspect-ratio:1/1){#bath-sheet .sheet-card{background-size:cover;background-position:center}}

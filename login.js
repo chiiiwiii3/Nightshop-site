@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-hall-28";
+const SHOP_VERSION = "nightshop-hall-29";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
@@ -26,7 +26,15 @@ questionForm?.addEventListener("submit", async event => {
   const status = document.querySelector("#question-status");
   const f = questionForm.elements, submit = questionForm.querySelector("button[type=submit]");
   submit.disabled = true; status.textContent = "Sending…";
-  const { error } = await supabase.rpc("send_help_request", { p_name: f.name.value, p_contact: f.contact.value, p_message: f.message.value });
+  let error = null;
+  try {
+    const response = await fetch(SUPABASE_URL + "/functions/v1/help-request", {
+      method: "POST", headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY },
+      body: JSON.stringify({ name: f.name.value, contact: f.contact.value, message: f.message.value })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) error = { message: result.error || "" };
+  } catch (e) { error = { message: "" }; }
   submit.disabled = false;
   if (error) {
     console.error("Help request failed:", error);

@@ -1022,19 +1022,14 @@ if (isOwner) {
     $("#owner-help-title").hidden = !show; $("#owner-help").hidden = !show;
     $("#owner-help").innerHTML = helpRows.map(r => `<div class="row-card"><div><b>${safe(r.name)}</b> · <small>${safe(r.contact)}</small><small>${safe(when(r.created_at))}</small><div class="reply">${safe(r.message)}</div></div><div class="decide"><button type="button" class="d-done" data-help-del="${safe(r.id)}">Done</button></div></div>`).join("");
   }
-  loadHelp = async () => {
-    const { data, error } = await supabase.from("help_requests").select("id,name,contact,message,created_at").order("created_at", { ascending: false }).limit(50);
-    if (error) return;                                        // the table may not be set up yet: stay quiet
-    helpRows = data || [];
-    ownerHelpRender();
-    if (helpRows.length) $$("#open-profile, .spot-profile").forEach(el => el.classList.add("has-new"));
-  };
+  loadHelp = async () => {};                                  // help notes arrive with the messages (see loadOwnerMessages)
   $("#owner-help").addEventListener("click", async event => {
     const btn = event.target.closest("[data-help-del]"); if (!btn) return;
     btn.disabled = true;
-    const { error } = await supabase.from("help_requests").delete().eq("id", btn.dataset.helpDel);
+    const { error } = await supabase.from("messages").update({ reply: DONE, replied_at: new Date().toISOString() }).eq("id", btn.dataset.helpDel);
     if (error) { btn.disabled = false; return; }
     helpRows = helpRows.filter(r => String(r.id) !== btn.dataset.helpDel); ownerHelpRender();
+    $$("#open-profile, .spot-profile").forEach(el => { if (!helpRows.length) el.classList.remove("has-new"); });
   });
 
   loadOwnerOrders = async () => {
@@ -1106,7 +1101,11 @@ if (isOwner) {
     const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(600);
     const box = $("#owner-messages");
     if (error) { box.textContent = "Could not load messages."; return; }
-    ownerMsgs = data || [];
+    const all = data || [], isHelpRow = m => m.customer_id == null && String(m.message).startsWith("🆘HELP|");
+    helpRows = all.filter(m => isHelpRow(m) && !hasDone(m)).map(m => { const [, name = "", contact = "", ...rest] = String(m.message).split("|"); return { id: m.id, name, contact, message: rest.join("|"), created_at: m.created_at }; });
+    ownerHelpRender();
+    if (helpRows.length) $$("#open-profile, .spot-profile").forEach(el => el.classList.add("has-new"));
+    ownerMsgs = all.filter(m => !isHelpRow(m));
     await learnNames(ownerMsgs.map(m => m.customer_id));
     renderOwnerMessages();
     ownerMsgs.forEach(m => {

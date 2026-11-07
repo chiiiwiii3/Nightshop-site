@@ -429,8 +429,7 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 }
 /* shadowman in the outside window: only on the tall storefront, where he is in the picture */
 .bath-hotspot{display:none}
-/* SWITCH: turn the shadowman on once backend/help-requests.sql has been run — remove "html.help-off" below */
-@media (max-aspect-ratio:1/1){html:not(.help-off) .bath-hotspot{display:block;left:69%;top:53.5%;width:17%;height:10%;border-radius:10px}}
+@media (max-aspect-ratio:1/1){.bath-hotspot{display:block;left:69%;top:53.5%;width:17%;height:10%;border-radius:10px}}
 @media(max-width:560px){#street-scene .window-message{position:fixed;left:10px;right:10px;bottom:max(10px,env(safe-area-inset-bottom));width:auto;z-index:50;background:rgba(3,8,14,.82)}}
 
 /* join with an invite + owner "Add a member" */

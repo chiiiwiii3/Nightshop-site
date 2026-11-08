@@ -416,7 +416,8 @@ async function tickClock() {                                  // the auto-close 
 async function refreshStatus() {
   await tickClock();
   const { data, error } = await supabase.from("shop_status").select("is_open").eq("id", 1).maybeSingle();
-  const next = !error && Boolean(data?.is_open);
+  if (error || !data) return;                                 // couldn't read it: keep what we show rather than claim "closed"
+  const next = Boolean(data.is_open);
   if (statusKnown && next !== shopOpen && !isOwner) toast(next ? "The lights just turned blue — the shop is open." : "The lights turned red — the shop is closed.");
   shopOpen = next; statusKnown = true;
   applyTheme();
@@ -896,6 +897,19 @@ $("#clear-chat").addEventListener("click", async () => {
   const plain = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)) && !hasDone(m));
   if (plain.length && await ask("Delete your whole conversation with the shadow? This can't be undone.", "Delete")) deleteMessages(plain);
 });
+/* sign out after 5 minutes without a tap, a key or a swipe (also when the app comes back from the background) */
+const IDLE_MS = 5 * 60 * 1000;
+let lastActive = Date.now(), idleOut = false;
+["pointerdown", "pointermove", "keydown", "touchstart", "wheel", "input"].forEach(ev => addEventListener(ev, () => { lastActive = Date.now(); }, { passive: true, capture: true }));
+const idleCheck = async () => {
+  if (idleOut || Date.now() - lastActive < IDLE_MS) return;
+  idleOut = true;
+  try { sessionStorage.setItem("ns-idle", "1"); } catch { /* storage blocked */ }
+  try { await supabase.auth.signOut(); } catch { /* ignore */ }
+  location.reload();
+};
+setInterval(idleCheck, 10000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) idleCheck(); });
 $("#sign-out").addEventListener("click", async () => {
   try { await window.nightshopPwa?.release?.(supabase); } catch { /* alerts cleanup is best effort */ }
   await supabase.auth.signOut(); location.reload();

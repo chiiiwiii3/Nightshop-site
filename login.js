@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-hall-32";
+const SHOP_VERSION = "nightshop-hall-33";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
@@ -67,6 +67,9 @@ joinForm?.addEventListener("submit", async event => {
   } catch (e) { status.textContent = "Couldn’t reach the shop. Check your connection and try again."; }
   finally { btn.disabled = false; }
 });
+
+// signed out for being idle: say so once, in the hallway
+try { if (sessionStorage.getItem("ns-idle")) { sessionStorage.removeItem("ns-idle"); if (note) note.textContent = "You were signed out after 5 minutes of inactivity. Sign in again."; } } catch { /* storage blocked */ }
 
 // Red sign = closed. Members can still sign in (profile + bathroom only); ordering is switched off inside.
 const artworkEl = document.querySelector("#exterior-artwork"), backdropEl = document.querySelector("#exterior-backdrop");

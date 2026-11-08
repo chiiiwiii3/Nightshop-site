@@ -121,6 +121,12 @@ const ownerControlsMarkup = isOwner ? `
     <input id="mem-pass" placeholder="Temporary password (12+ characters)" maxlength="128" autocomplete="off">
     <button type="button" id="mem-create" class="ghost">Create account</button>
     <p id="mem-status" class="small" aria-live="polite"></p>
+    <h3>AUTO-CLOSE</h3>
+    <p class="muted small">Close the shop by itself at a set time on the days you pick. If you open it by hand after the closing time, it stays open until the next closing time.</p>
+    <label class="sch-master"><input type="checkbox" id="sch-enabled"> Auto-close is on</label>
+    <div id="sch-days" class="sch-days"></div>
+    <div class="app-row"><button type="button" class="ghost" id="sch-all">Same time every day</button><button type="button" id="sch-save">Save schedule</button></div>
+    <p id="sch-status" class="small" aria-live="polite"></p>
     <h3>EXTERIOR ARTWORK</h3>
     <p class="muted small">Replace the storefront picture from your phone Gallery. JPG, PNG, or WebP · up to 15 MB.</p>
     <input id="exterior-upload" type="file" accept="image/jpeg,image/png,image/webp">
@@ -397,7 +403,18 @@ function applyTheme() {
   const lights = $("#toggle-shop");
   if (lights) lights.textContent = shopOpen ? "💡 LIGHTS BLUE · SHOP OPEN — tap to close" : "💡 LIGHTS RED · SHOP CLOSED — tap to open";
 }
+let lastTick = 0;
+async function tickClock() {                                  // the auto-close schedule is applied by the server whenever anyone checks
+  if (Date.now() - lastTick < 15000) return;
+  lastTick = Date.now();
+  try {
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 4000);
+    await fetch(SUPABASE_URL + "/functions/v1/shop-clock", { method: "POST", headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY }, body: "{}", signal: ctl.signal });
+    clearTimeout(timer);
+  } catch { /* the schedule is a bonus; a normal status read follows */ }
+}
 async function refreshStatus() {
+  await tickClock();
   const { data, error } = await supabase.from("shop_status").select("is_open").eq("id", 1).maybeSingle();
   const next = !error && Boolean(data?.is_open);
   if (statusKnown && next !== shopOpen && !isOwner) toast(next ? "The lights just turned blue — the shop is open." : "The lights turned red — the shop is closed.");
@@ -1241,6 +1258,51 @@ if (isOwner) {
       const result = await callMembers({ action: "create", username: user.value.trim(), password: pass.value });
       status.textContent = result.message + " Password: " + pass.value;
       user.value = ""; pass.value = "";
+    } catch (e) { status.textContent = e.message; }
+    finally { btn.disabled = false; }
+  });
+
+
+  /* auto-close schedule: days + time, applied by the server */
+  const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], ORDER = [1, 2, 3, 4, 5, 6, 0];
+  const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York"; } catch { return "America/New_York"; } })();
+  let schedule = { enabled: false, tz, days: Object.fromEntries(DAYS.map((_, i) => [i, { on: true, time: "22:00" }])) };
+  const drawSchedule = () => {
+    $("#sch-enabled").checked = schedule.enabled;
+    $("#sch-days").innerHTML = ORDER.map(i => `<div class="sch-row"><label><input type="checkbox" data-sch-on="${i}" ${schedule.days[i].on ? "checked" : ""}> ${DAYS[i]}</label><input type="time" data-sch-time="${i}" value="${schedule.days[i].time}" ${schedule.days[i].on ? "" : "disabled"}></div>`).join("");
+  };
+  const readSchedule = () => {
+    schedule.enabled = $("#sch-enabled").checked;
+    ORDER.forEach(i => { schedule.days[i] = { on: $(`[data-sch-on="${i}"]`).checked, time: $(`[data-sch-time="${i}"]`).value || "22:00" }; });
+  };
+  const callClock = async payload => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch(SUPABASE_URL + "/functions/v1/shop-clock", { method: "POST", headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + (session?.access_token || "") }, body: JSON.stringify(payload) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) throw new Error(result.error || "That didn’t work. Please try again.");
+    return result;
+  };
+  drawSchedule();
+  callClock({ action: "get" }).then(r => { if (r.schedule) { schedule = r.schedule; drawSchedule(); } }).catch(() => {});
+  $("#sch-days").addEventListener("change", event => {
+    const on = event.target.closest("[data-sch-on]");
+    if (on) $(`[data-sch-time="${on.dataset.schOn}"]`).disabled = !on.checked;
+  });
+  $("#sch-all").addEventListener("click", () => {
+    const first = $$("[data-sch-time]").find(el => !el.disabled)?.value || "22:00";
+    $$("[data-sch-time]").forEach(el => { el.value = first; });
+    $("#sch-status").textContent = "Every day now uses " + first + ". Tap Save to keep it.";
+  });
+  $("#sch-save").addEventListener("click", async () => {
+    const btn = $("#sch-save"), status = $("#sch-status");
+    readSchedule(); schedule.tz = tz;
+    btn.disabled = true; status.textContent = "Saving…";
+    try {
+      const r = await callClock({ action: "save", schedule });
+      schedule = r.schedule; drawSchedule();
+      const days = ORDER.filter(i => schedule.days[i].on);
+      status.textContent = !schedule.enabled ? "Saved. Auto-close is off." : !days.length ? "Saved, but no days are picked, so nothing will close." : "Saved. The shop will close by itself on the days you picked (" + tz.replace(/_/g, " ") + " time)." + (r.closed_by_schedule ? " It is past a closing time, so it just closed." : "");
+      if (r.closed_by_schedule) refreshStatus();
     } catch (e) { status.textContent = e.message; }
     finally { btn.disabled = false; }
   });

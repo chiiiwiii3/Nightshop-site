@@ -447,3 +447,12 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 .mem-code b{display:block;font:700 24px/1.3 "Courier New",monospace;letter-spacing:3px;color:#f6c744;user-select:all}
 .mem-code .app-row{flex:1 1 100%}
 .owner-pane #mem-user,.owner-pane #mem-pass{width:100%;box-sizing:border-box;margin:6px 0}
+
+/* auto-close schedule */
+.sch-master{display:flex;align-items:center;gap:10px;margin:8px 0;font-weight:700;color:#f6c744}
+.sch-days{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.sch-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid rgba(233,185,58,.35);border-radius:10px;background:rgba(0,0,0,.3)}
+.sch-row label{display:flex;align-items:center;gap:10px}
+.sch-row input[type=time]{width:auto;padding:8px;font-size:16px;border:1px solid #c8962a;border-radius:8px;background:#020a05;color:#fff}
+.sch-row input[type=time]:disabled{opacity:.4}
+.sch-master input,.sch-row input[type=checkbox]{width:22px;height:22px;accent-color:#f6c744}

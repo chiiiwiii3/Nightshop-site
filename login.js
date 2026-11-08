@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-hall-30";
+const SHOP_VERSION = "nightshop-hall-31";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
@@ -93,6 +93,11 @@ function showClosedDoor(closed, message) {
 }
 async function checkDoor() {
   try {
+    try {                                                    // the auto-close schedule is applied by the server whenever anyone checks
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 4000);
+      await fetch(SUPABASE_URL + "/functions/v1/shop-clock", { method: "POST", headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY }, body: "{}", signal: ctl.signal });
+      clearTimeout(timer);
+    } catch { /* fall through to the normal read */ }
     const { data, error } = await supabase.from("shop_status").select("is_open").eq("id", 1).maybeSingle();
     if (error || !data) return; // unknown: don't claim it's closed
     showClosedDoor(data.is_open === false);

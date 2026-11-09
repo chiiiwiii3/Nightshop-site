@@ -112,6 +112,10 @@ const ownerControlsMarkup = isOwner ? `
     <div class="invite-box"><img id="invite-qr" src="./icons/invite-qr.svg" alt="Scan to join Lu’s Lounge" width="200" height="200"></div>
     <div class="app-row"><button type="button" id="invite-share">📤 Share invite</button><button type="button" class="ghost" id="invite-copy">Copy link</button></div>
     <p class="muted small" id="invite-note" aria-live="polite"></p>
+    <h3>INVENTORY</h3>
+    <p class="muted small">Low: the hologram blinks red but people can still order. Out: the hologram disappears and nobody can order it.</p>
+    <div id="inv-rows" class="inv-rows">${ITEMS.map(item => `<div class="inv-row" data-inv="${item.id}"><b>${item.icon} ${item.name}</b><div class="inv-btns"><button type="button" data-level="ok" class="on">In stock</button><button type="button" data-level="low">Low</button><button type="button" data-level="out">Out</button></div></div>`).join("")}</div>
+    <p id="inv-status" class="small" aria-live="polite"></p>
     <h3>ADD A MEMBER</h3>
     <p class="muted small">Make a one-time invite code (good for 7 days, one person), or make the account yourself for someone who has no phone service.</p>
     <button type="button" id="mem-invite" class="lights-btn">🎟 NEW INVITE CODE</button>
@@ -388,6 +392,11 @@ window.__spin = { get pan() { return pan; }, set: setPan };   // used by the tes
 
 /* ---------- shop open (blue lights) / closed (red lights) ---------- */
 let shopOpen = false, statusKnown = false;
+let inventory = {};                                           // { ice|tea|shot: "ok" | "low" | "out" } from the owner
+function setInventory(next) {
+  if (!next || typeof next !== "object") return;
+  inventory = next; applyTheme();
+}
 function applyTheme() {
   document.body.classList.toggle("theme-open", shopOpen);
   document.body.classList.toggle("theme-closed", !shopOpen);
@@ -398,7 +407,12 @@ function applyTheme() {
   let tint = document.querySelector("#closed-tint");
   if (!tint) { tint = document.createElement("div"); tint.id = "closed-tint"; tint.setAttribute("aria-hidden", "true"); document.body.append(tint); }
   tint.classList.toggle("on", statusKnown && !shopOpen);          // red over the whole screen while the shop is closed
-  $$("[data-product]").forEach(button => { button.disabled = !shopOpen; button.hidden = !shopOpen; });
+  $$("[data-product]").forEach(button => {
+    const level = inventory[button.dataset.product] || "ok";
+    button.disabled = !shopOpen || level === "out"; button.hidden = !shopOpen || level === "out";   // out of stock: the hologram disappears
+    button.classList.toggle("low", level === "low");                                              // low: it blinks red but can still be ordered
+  });
+  if (selected && inventory[selected.id] === "out") closeOrder();
   if (!shopOpen) closeOrder();
   const lights = $("#toggle-shop");
   if (lights) lights.textContent = shopOpen ? "💡 LIGHTS BLUE · SHOP OPEN — tap to close" : "💡 LIGHTS RED · SHOP CLOSED — tap to open";
@@ -409,8 +423,10 @@ async function tickClock() {                                  // the auto-close 
   lastTick = Date.now();
   try {
     const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 4000);
-    await fetch(SUPABASE_URL + "/functions/v1/shop-clock", { method: "POST", headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY }, body: "{}", signal: ctl.signal });
+    const response = await fetch(SUPABASE_URL + "/functions/v1/shop-clock", { method: "POST", headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY }, body: "{}", signal: ctl.signal });
     clearTimeout(timer);
+    const result = await response.json().catch(() => ({}));
+    if (result?.inventory) setInventory(result.inventory);
   } catch { /* the schedule is a bonus; a normal status read follows */ }
 }
 async function refreshStatus() {
@@ -536,6 +552,7 @@ const rememberHidden = ids => {
 $("#place-order").addEventListener("click", async () => {
   const note = $("#order-note");
   if (!shopOpen || !selected) { note.textContent = "The shop is closed."; return; }
+  if (inventory[selected.id] === "out") { note.textContent = "Sorry, that one just ran out."; return; }
   const order = computeOrder();
   if (selected.kind === "amount" && (!Number.isFinite(order.total) || order.total < 20 || order.total > 10000 || order.total % 5 !== 0)) { note.textContent = "Choose $20 or more in $5 steps."; return; }
   if (selected.kind === "shot" && (!Number.isInteger(order.quantity) || order.quantity < 1 || order.quantity > 99)) { note.textContent = "Choose 1–99 shots."; return; }
@@ -1319,6 +1336,24 @@ if (isOwner) {
       if (r.closed_by_schedule) refreshStatus();
     } catch (e) { status.textContent = e.message; }
     finally { btn.disabled = false; }
+  });
+
+
+  /* inventory: In stock / Low / Out for each hologram, shared with everyone */
+  const drawInventory = () => $$("#inv-rows [data-inv]").forEach(row => row.querySelectorAll("[data-level]").forEach(b => b.classList.toggle("on", b.dataset.level === (inventory[row.dataset.inv] || "ok"))));
+  drawInventory();
+  callClock({ action: "get" }).then(r => { if (r.inventory) { setInventory(r.inventory); drawInventory(); } }).catch(() => {});
+  $("#inv-rows").addEventListener("click", async event => {
+    const b = event.target.closest("[data-level]"); if (!b) return;
+    const id = b.closest("[data-inv]").dataset.inv, before = { ...inventory }, next = { ...inventory, [id]: b.dataset.level };
+    setInventory(next); drawInventory();
+    const status = $("#inv-status"); status.textContent = "Saving…";
+    try {
+      const r = await callClock({ action: "inventory", inventory: next });
+      setInventory(r.inventory); drawInventory();
+      const item = ITEMS.find(i => i.id === id), level = r.inventory[id];
+      status.textContent = item.name + ": " + (level === "out" ? "out of stock. The hologram is gone." : level === "low" ? "low. It blinks red but can still be ordered." : "back in stock.");
+    } catch (e) { setInventory(before); drawInventory(); status.textContent = e.message; }
   });
 
   /* owner: pick a picture, it is cropped to the frame's shape (cover) and shared with everyone */

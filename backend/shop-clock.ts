@@ -4,7 +4,8 @@
 //   { enabled, tz, days: { "0".."6": { on, time:"HH:MM" } } }   (0 = Sunday)
 // { action: "tick" } (anyone; the app calls it on every status check): closes the shop if a closing time has passed since the
 //   shop was last switched. If the owner opens it by hand AFTER the closing time, it stays open until the next closing time.
-// { action: "get" } / { action: "save", schedule } : owner only.
+// { action: "get" } / { action: "save", schedule } / { action: "inventory", inventory } : owner only.
+//   Inventory ({ice|tea|shot: "ok"|"low"|"out"}) is stored in the owner's app_metadata.inventory and returned to everyone with every tick.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
@@ -48,10 +49,11 @@ Deno.serve(async (req) => {
   const { data: ownerRow } = await admin.from("profiles").select("id").eq("is_owner", true).limit(1).maybeSingle();
   const { data: ownerUser } = ownerRow ? await admin.auth.admin.getUserById(ownerRow.id) : { data: null };
   const schedule = () => clean(ownerUser?.user?.app_metadata?.shop_schedule);
+  const inventory = () => { const raw = ownerUser?.user?.app_metadata?.inventory || {}, out = {}; for (const id of ["ice", "tea", "shot"]) out[id] = ["low", "out"].includes(raw[id]) ? raw[id] : "ok"; return out; };
 
   async function tick() {
     const { data: st } = await admin.from("shop_status").select("is_open,updated_at").eq("id", 1).maybeSingle();
-    if (!st) return { is_open: null };
+    if (!st) return { is_open: null, inventory: inventory() };
     const sch = schedule();
     if (st.is_open && sch?.enabled) {
       const now = Date.now(), upd = Date.parse(st.updated_at), t = parts(now, sch.tz);
@@ -63,14 +65,14 @@ Deno.serve(async (req) => {
         const closeAt = zonedToUtc(base.getUTCFullYear(), base.getUTCMonth() + 1, base.getUTCDate(), hh, mm, sch.tz);
         if (now >= closeAt && upd < closeAt) {
           await admin.from("shop_status").update({ is_open: false, updated_at: new Date().toISOString() }).eq("id", 1);
-          return { is_open: false, closed_by_schedule: true };
+          return { is_open: false, closed_by_schedule: true, inventory: inventory() };
         }
       }
     }
-    return { is_open: st.is_open };
+    return { is_open: st.is_open, inventory: inventory() };
   }
 
-  if (body.action === "get" || body.action === "save") {
+  if (body.action === "get" || body.action === "save" || body.action === "inventory") {
     const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
     const { data: who } = await admin.auth.getUser(token);
     if (!who?.user || !ownerRow || who.user.id !== ownerRow.id) return respond(403, { error: "Owner only." });
@@ -83,7 +85,14 @@ Deno.serve(async (req) => {
       const state = await tick();
       return respond(200, { success: true, schedule: next, ...state });
     }
-    return respond(200, { success: true, schedule: schedule() });
+    if (body.action === "inventory") {
+      const next = {}; for (const id of ["ice", "tea", "shot"]) next[id] = ["low", "out"].includes(body.inventory?.[id]) ? body.inventory[id] : "ok";
+      const meta = { ...(ownerUser.user.app_metadata || {}), inventory: next };
+      const { error } = await admin.auth.admin.updateUserById(ownerRow.id, { app_metadata: meta });
+      if (error) return respond(500, { error: "Could not save inventory." });
+      return respond(200, { success: true, inventory: next });
+    }
+    return respond(200, { success: true, schedule: schedule(), inventory: inventory() });
   }
   return respond(200, { success: true, ...(await tick()) });
 });

@@ -117,14 +117,14 @@ function inviteGate() {
   const el = document.createElement("div");
   el.id = "invite-gate"; el.className = "invite-gate";
   const steps = isIOS
-    ? '<ol class="small"><li>Tap the <b>Share</b> button in Safari (square with an arrow).</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li><li>Open <b>Lu’s Lounge</b> from your Home Screen.</li></ol>'
+    ? '<ol class="small"><li>Tap the <b>Share</b> button (square with an arrow). Use <b>Safari</b> if you opened this in another app.</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li><li>Open <b>Lu’s Lounge</b> from your Home Screen. Come back here only to add it.</li></ol>'
     : '<p class="small" id="gate-help">Tap the button below to add it to your home screen.</p>';
   el.innerHTML = '<div class="gate-card"><div class="crest">♛</div><h1>LU’S LOUNGE</h1><p class="small">You\'re invited. Add the app to your phone to come in.</p>' + steps +
     (isIOS ? "" : '<button type="button" id="gate-install" class="order-go">📲 ADD TO HOME SCREEN</button>') +
-    '<button type="button" class="ghost" id="gate-skip">Continue in browser</button></div>';
+    (isIOS ? "" : '<button type="button" class="ghost" id="gate-skip">Continue in browser</button>') + '</div>';   // iPhones: Home Screen only, no browser option
   document.body.append(el);
   const close = () => { el.remove(); try { history.replaceState(null, "", location.pathname); } catch { /* ignore */ } };
-  el.querySelector("#gate-skip").addEventListener("click", close);
+  el.querySelector("#gate-skip")?.addEventListener("click", close);
   el.querySelector("#gate-install")?.addEventListener("click", async () => {
     if (installEvent) { installEvent.prompt(); try { await installEvent.userChoice; } catch { /* ignore */ } installEvent = null; close(); }
     else el.querySelector("#gate-help").textContent = "Open your browser menu (⋮) and tap Install app or Add to Home screen.";

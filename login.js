@@ -1,6 +1,6 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-client.js";
 
-const SHOP_VERSION = "nightshop-hall-36";
+const SHOP_VERSION = "nightshop-hall-37";
 
 const form = document.querySelector("#login-form");
 const note = document.querySelector("#status-note");
@@ -69,7 +69,7 @@ joinForm?.addEventListener("submit", async event => {
 });
 
 // signed out for being idle: say so once, in the hallway
-try { if (sessionStorage.getItem("ns-idle")) { sessionStorage.removeItem("ns-idle"); if (note) note.textContent = "You were signed out after 5 minutes of inactivity. Sign in again."; } } catch { /* storage blocked */ }
+try { const why = sessionStorage.getItem("ns-idle"); if (why) { sessionStorage.removeItem("ns-idle"); if (note) note.textContent = why === "left" ? "You left the app, so you were signed out. Sign in again. (App Lock in your profile lets you skip this.)" : "You were signed out after 12 hours of inactivity. Sign in again."; } } catch { /* storage blocked */ }
 
 // Red sign = closed. Members can still sign in (profile + bathroom only); ordering is switched off inside.
 const artworkEl = document.querySelector("#exterior-artwork"), backdropEl = document.querySelector("#exterior-backdrop");

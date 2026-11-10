@@ -473,3 +473,18 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 #pf-top [data-pane]{position:relative}
 #pf-top .has-new:after{content:"";position:absolute;top:2px;right:4px;width:10px;height:10px;border-radius:50%;background:#ff3358;border:2px solid #fff;box-shadow:0 0 8px #ff3358}
 #pf-top button{padding:9px 4px;font-size:11px;letter-spacing:.4px;white-space:nowrap}
+/* swipe pattern pad + lock over the hallway + walk-in balances */
+.pat-host{display:flex;justify-content:center;margin:8px 0}
+.pat{position:relative;width:min(70vw,240px);aspect-ratio:1;display:grid;grid-template-columns:repeat(3,1fr);touch-action:none;user-select:none;-webkit-user-select:none}
+.pat-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pat-lines polyline{fill:none;stroke:#e9b93a;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.pat-dot{place-self:center;width:22px;height:22px;border-radius:50%;border:2px solid #e9b93a;background:#03110a;pointer-events:none}
+.pat-dot.on{background:#e9b93a;box-shadow:0 0 12px #e9b93a}
+.pat.bad .pat-lines polyline{stroke:#ff3358}.pat.bad .pat-dot.on{background:#ff3358;border-color:#ff3358;box-shadow:0 0 12px #ff3358}
+.pat.ok .pat-lines polyline{stroke:#38ff7a}.pat.ok .pat-dot.on{background:#38ff7a;border-color:#38ff7a}
+.pin-mode{margin:6px 0 10px}.pin-mode button{letter-spacing:.5px}
+.pin-lock{background:linear-gradient(#000b,#000d),url(./art/hallway.jpg) center/cover no-repeat,#020a05}
+@media (max-aspect-ratio:1/1){.pin-lock{background:linear-gradient(#0008,#000c),url(./art/hallway-tall.jpg) center/cover no-repeat,#020a05}}
+.pin-lock .pat-dot{width:26px;height:26px}
+.bal-views{margin:0 0 12px}
+.wal-add{display:flex;gap:8px;margin:0 0 12px}.wal-add input{flex:1;min-width:0}.wal-add button{white-space:nowrap}

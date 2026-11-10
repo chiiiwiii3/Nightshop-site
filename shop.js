@@ -275,13 +275,18 @@ root.innerHTML = `
             <button type="button" class="pf-row" data-pf="pin"><span class="pf-ico">🛡️</span><span>App Lock PIN<small id="pf-pin-state">(For phone security)</small></span><i>›</i></button>
             <div class="pf-sub" id="pf-pin" hidden>
               <form id="pf-pin-form" autocomplete="off">
+                <div class="tabs pin-mode" id="pf-pin-mode"><button type="button" data-mode="pin" class="on">6 digits</button><button type="button" data-mode="pattern">Swipe pattern</button></div>
+                <div id="pf-cur-pat" hidden><small class="pf-note">Draw your current pattern</small><div class="pat-host" id="pf-pat-cur"></div></div>
                 <input type="password" inputmode="numeric" pattern="[0-9]*" name="cur" placeholder="Current PIN" maxlength="6" autocomplete="off" hidden>
-                <input type="password" inputmode="numeric" pattern="[0-9]*" name="a" placeholder="New PIN (4–6 digits)" maxlength="6" minlength="4" autocomplete="off" required>
-                <input type="password" inputmode="numeric" pattern="[0-9]*" name="b" placeholder="Type it again" maxlength="6" minlength="4" autocomplete="off" required>
-                <button type="submit" class="pf-btn">Save PIN</button>
+                <div id="pf-pin-fields">
+                  <input type="password" inputmode="numeric" pattern="[0-9]{6}" name="a" placeholder="New PIN (6 digits)" maxlength="6" minlength="6" autocomplete="off" required>
+                  <input type="password" inputmode="numeric" pattern="[0-9]{6}" name="b" placeholder="Type it again" maxlength="6" minlength="6" autocomplete="off" required>
+                </div>
+                <div id="pf-pat-fields" hidden><small class="pf-note" id="pf-pat-label">Draw a new pattern (connect at least 4 dots)</small><div class="pat-host" id="pf-pat-new"></div></div>
+                <button type="submit" class="pf-btn">Save lock</button>
               </form>
-              <button type="button" class="pf-btn pf-danger-lite" id="pf-pin-off" hidden>Remove PIN</button>
-              <p class="pf-note" id="pf-pin-note" aria-live="polite">The PIN works on this phone only. The app asks for it each time you open it.</p>
+              <button type="button" class="pf-btn pf-danger-lite" id="pf-pin-off" hidden>Remove lock</button>
+              <p class="pf-note" id="pf-pin-note" aria-live="polite">The lock works on this phone only. Each time you leave the app, it asks for it before letting you back in. Without a lock, leaving the app signs you out.</p>
             </div>
             <button type="button" class="pf-row" data-pf="app"><span class="pf-ico">📲</span><span>App &amp; Alerts</span><i>›</i></button>
             <div class="pf-sub" id="pf-app" hidden><div id="app-panel"></div></div>
@@ -697,9 +702,11 @@ function renderProfile() {
   $$("#pf-msg-tabs [data-ptab]").forEach(btn => btn.classList.toggle("on", btn.dataset.ptab === pfTab));
   const shown = pfTab === "history" ? history : openConvos;
   $("#pf-msg-list").innerHTML = shown.slice(0, 30).map(m => `<div class="row-card"><div><b>You</b><small>${safe(m.message)}</small>${replyLines(m.reply).length ? `<div class="reply">🕴️ ${safe(replyLines(m.reply).join("\n"))}</div>` : ""}</div></div>`).join("") || `<p class="pf-note">${pfTab === "history" ? "No past conversations." : "No open conversations."}</p>`;
+  const isPat0 = () => getPin()?.type === "pattern";
   const hasPin = Boolean(getPin());
-  $("#pf-pin-state").textContent = hasPin ? "(On · tap to change)" : "(For phone security)";
-  $("#pf-pin-form").elements.cur.hidden = !hasPin; $("#pf-pin-form").elements.cur.required = hasPin; $("#pf-pin-off").hidden = !hasPin;
+  $("#pf-pin-state").textContent = hasPin ? (isPat0() ? "(Pattern on · tap to change)" : "(On · tap to change)") : "(For phone security)";
+  const isPat = hasPin && getPin().type === "pattern";
+  $("#pf-pin-form").elements.cur.hidden = !hasPin || isPat; $("#pf-pin-form").elements.cur.required = hasPin && !isPat; $("#pf-cur-pat").hidden = !isPat; $("#pf-pin-off").hidden = !hasPin;
 }
 function setPfPane(name) {
   $$(".pf-pane").forEach(p => { p.hidden = p.dataset.pane !== name; });
@@ -766,44 +773,115 @@ $("#pf-pw").addEventListener("submit", async event => {
 const PIN_KEY = "lulounge-pin-v1";
 function getPin() { try { return JSON.parse(localStorage.getItem(PIN_KEY) || "null"); } catch { return null; } }
 async function sha(text) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join(""); }
-async function savePin(pin) { const salt = [...crypto.getRandomValues(new Uint8Array(8))].join("-"); localStorage.setItem(PIN_KEY, JSON.stringify({ salt, len: pin.length, hash: await sha(salt + pin) })); }
-async function pinOk(pin) { const p = getPin(); return Boolean(p) && (await sha(p.salt + pin)) === p.hash; }
-$("#pf-pin-form").addEventListener("submit", async event => {
+async function savePin(pin, type = "pin") { const salt = [...crypto.getRandomValues(new Uint8Array(8))].join("-"); localStorage.setItem(PIN_KEY, JSON.stringify({ salt, type, len: type === "pin" ? pin.length : 0, hash: await sha(salt + pin) })); }
+async function pinOk(pin) { const p = getPin(); return Boolean(p) && Boolean(pin) && (await sha(p.salt + pin)) === p.hash; }
+
+/* swipe pattern pad: a 3x3 grid; the value is the dot numbers in the order they were touched, e.g. "0-1-2-5" */
+function makePad(host, onDone, onShort) {
+  host.innerHTML = '<div class="pat"><svg class="pat-lines" viewBox="0 0 300 300" aria-hidden="true"><polyline points="" /></svg>' + [0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => `<span class="pat-dot" data-d="${i}"></span>`).join("") + "</div>";
+  const box = host.querySelector(".pat"), line = host.querySelector("polyline"), dots = [...box.querySelectorAll(".pat-dot")];
+  let seq = [], drawing = false, locked = false;
+  const centre = i => [(i % 3) * 100 + 50, Math.floor(i / 3) * 100 + 50];
+  const draw = pt => { line.setAttribute("points", seq.map(i => centre(i).join(",")).concat(pt ? [pt.join(",")] : []).join(" ")); dots.forEach((d, i) => d.classList.toggle("on", seq.includes(i))); };
+  const at = e => { const r = box.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * 300, (e.clientY - r.top) / r.height * 300]; };
+  const hit = ([x, y]) => { for (let i = 0; i < 9; i++) { const [cx, cy] = centre(i); if (Math.hypot(x - cx, y - cy) < 36 && !seq.includes(i)) return i; } return -1; };
+  box.addEventListener("pointerdown", e => { if (locked) return; e.preventDefault(); box.setPointerCapture?.(e.pointerId); drawing = true; seq = []; box.classList.remove("bad"); const p = at(e), h = hit(p); if (h >= 0) seq.push(h); draw(p); });
+  box.addEventListener("pointermove", e => { if (!drawing) return; const p = at(e), h = hit(p); if (h >= 0) seq.push(h); draw(p); });
+  const end = () => { if (!drawing) return; drawing = false; draw(); if (seq.length >= 4) onDone(seq.join("-")); else if (seq.length) { box.classList.add("bad"); onShort && onShort(); setTimeout(() => api.reset(), 500); } };
+  box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
+  const api = { reset() { seq = []; drawing = false; box.classList.remove("bad", "ok"); draw(); }, bad() { box.classList.add("bad"); setTimeout(() => api.reset(), 500); }, ok() { box.classList.add("ok"); }, lock(v) { locked = v; } };
+  return api;
+}
+
+/* the change-lock form */
+let lockMode = "pin", patCur = "", patNew = "", patFirst = "";
+const pfForm = $("#pf-pin-form"), pfNote = $("#pf-pin-note");
+const curPad = makePad($("#pf-pat-cur"), v => { patCur = v; pfNote.textContent = "Current pattern entered."; curPad.ok(); }, () => { pfNote.textContent = "Connect at least 4 dots."; });
+const newPad = makePad($("#pf-pat-new"), v => {
+  if (!patFirst) { patFirst = v; $("#pf-pat-label").textContent = "Draw it again to confirm"; newPad.reset(); return; }
+  if (patFirst === v) { patNew = v; $("#pf-pat-label").textContent = "✓ Pattern set. Tap Save lock."; newPad.ok(); }
+  else { patFirst = ""; patNew = ""; $("#pf-pat-label").textContent = "Those didn't match. Draw a new pattern (4+ dots)"; newPad.bad(); }
+}, () => { $("#pf-pat-label").textContent = "Connect at least 4 dots."; });
+function setLockMode(mode) {
+  lockMode = mode; patFirst = ""; patNew = "";
+  $$("#pf-pin-mode [data-mode]").forEach(b => b.classList.toggle("on", b.dataset.mode === mode));
+  $("#pf-pin-fields").hidden = mode !== "pin"; $("#pf-pat-fields").hidden = mode !== "pattern";
+  pfForm.elements.a.required = pfForm.elements.b.required = mode === "pin";
+  $("#pf-pat-label").textContent = "Draw a new pattern (connect at least 4 dots)"; newPad.reset();
+}
+$("#pf-pin-mode").addEventListener("click", e => { const b = e.target.closest("[data-mode]"); if (b) setLockMode(b.dataset.mode); });
+const currentLockOk = () => { const p = getPin(); return p.type === "pattern" ? pinOk(patCur) : pinOk(pfForm.elements.cur.value); };
+function resetLockForm() { pfForm.reset(); patCur = ""; curPad.reset(); setLockMode("pin"); }
+pfForm.addEventListener("submit", async event => {
   event.preventDefault();
-  const f = event.target, note = $("#pf-pin-note"), a = f.elements.a.value, b = f.elements.b.value;
-  if (getPin() && !(await pinOk(f.elements.cur.value))) { note.textContent = "Your current PIN isn't right."; return; }
-  if (!/^\d{4,6}$/.test(a)) { note.textContent = "Use 4 to 6 digits."; return; }
-  if (a !== b) { note.textContent = "The two PINs don't match."; return; }
-  await savePin(a); f.reset(); $("#pf-pin").hidden = true; renderProfile(); toast("App Lock is on for this phone. 🛡️");
+  if (getPin() && !(await currentLockOk())) { pfNote.textContent = getPin().type === "pattern" ? "Your current pattern isn't right." : "Your current PIN isn't right."; if (getPin().type === "pattern") curPad.bad(); return; }
+  if (lockMode === "pattern") {
+    if (!patNew) { pfNote.textContent = "Draw your new pattern twice first."; return; }
+    await savePin(patNew, "pattern");
+  } else {
+    const a = pfForm.elements.a.value, b = pfForm.elements.b.value;
+    if (!/^\d{6}$/.test(a)) { pfNote.textContent = "Use exactly 6 digits."; return; }
+    if (a !== b) { pfNote.textContent = "The two PINs don't match."; return; }
+    await savePin(a, "pin");
+  }
+  resetLockForm(); $("#pf-pin").hidden = true; renderProfile(); toast("App Lock is on for this phone. 🛡️");
 });
 $("#pf-pin-off").addEventListener("click", async () => {
-  const cur = $("#pf-pin-form").elements.cur.value, note = $("#pf-pin-note");
-  if (!(await pinOk(cur))) { note.textContent = "Type your current PIN above to remove it."; return; }
-  localStorage.removeItem(PIN_KEY); $("#pf-pin-form").reset(); $("#pf-pin").hidden = true; renderProfile(); toast("App Lock turned off.");
+  if (!(await currentLockOk())) { pfNote.textContent = getPin()?.type === "pattern" ? "Draw your current pattern above to remove it." : "Type your current PIN above to remove it."; return; }
+  localStorage.removeItem(PIN_KEY); resetLockForm(); $("#pf-pin").hidden = true; renderProfile(); toast("App Lock turned off.");
 });
-let lockEl = null, hiddenAt = 0;
+
+/* leaving the app: with a lock, the hallway asks for it again; without one, you're signed out */
+let lockEl = null, hiddenAt = 0, pickingUntil = 0;
+const AWAY_KEY = "lulounge-away";
+document.addEventListener("click", e => { if (e.target instanceof HTMLInputElement && e.target.type === "file") pickingUntil = Date.now() + 120000; }, true);   // the photo picker leaves the app for a moment
+const picking = () => Date.now() < pickingUntil;
 function showLock() {
   const pin = getPin(); if (!pin || lockEl) return;
-  lockEl = document.createElement("div"); lockEl.className = "pin-lock"; lockEl.setAttribute("role", "dialog"); lockEl.setAttribute("aria-label", "Enter your PIN");
-  lockEl.innerHTML = '<div class="pin-box"><div class="pin-crest">♛</div><h2>LU’S LOUNGE</h2><p>Enter your PIN</p><div class="pin-dots">' + "<i></i>".repeat(pin.len) + '</div><div class="pin-pad">' +
-    [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" data-k="${n}">${n}</button>`).join("") + '<span></span><button type="button" data-k="0">0</button><button type="button" data-k="x" aria-label="Delete">⌫</button></div><button type="button" class="pin-forgot">Forgot PIN? Sign out</button></div>';
+  const isPat = pin.type === "pattern";
+  lockEl = document.createElement("div"); lockEl.className = "pin-lock"; lockEl.setAttribute("role", "dialog"); lockEl.setAttribute("aria-label", isPat ? "Draw your pattern" : "Enter your PIN");
+  lockEl.innerHTML = '<div class="pin-box"><div class="pin-crest">♛</div><h2>LU’S LOUNGE</h2><p>' + (isPat ? "Draw your pattern" : "Enter your PIN") + '</p>' +
+    (isPat ? '<div class="pat-host" id="lock-pat"></div>' : '<div class="pin-dots">' + "<i></i>".repeat(pin.len) + '</div><div class="pin-pad">' +
+    [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" data-k="${n}">${n}</button>`).join("") + '<span></span><button type="button" data-k="0">0</button><button type="button" data-k="x" aria-label="Delete">⌫</button></div>') +
+    '<button type="button" class="pin-forgot">Forgot it? Sign in with your password</button></div>';
   document.body.append(lockEl);
   let buf = "", fails = 0;
+  const unlock = () => { lockEl.remove(); lockEl = null; try { localStorage.removeItem(AWAY_KEY); } catch { /* ignore */ } };
+  const tooMany = () => { localStorage.removeItem(PIN_KEY); lockEl.remove(); lockEl = null; $("#sign-out").click(); };   // too many tries: sign in with the password again
   const dots = () => [...lockEl.querySelectorAll(".pin-dots i")].forEach((d, i) => d.classList.toggle("on", i < buf.length));
+  if (isPat) {
+    const pad = makePad(lockEl.querySelector("#lock-pat"), async v => {
+      if (await pinOk(v)) { unlock(); return; }
+      fails++; pad.bad(); lockEl.querySelector(".pin-box").classList.add("shake"); setTimeout(() => lockEl?.querySelector(".pin-box")?.classList.remove("shake"), 400);
+      if (fails >= 5) tooMany();
+    });
+  }
   lockEl.addEventListener("click", async e => {
     if (e.target.closest(".pin-forgot")) { localStorage.removeItem(PIN_KEY); lockEl.remove(); lockEl = null; $("#sign-out").click(); return; }
     const k = e.target.closest("[data-k]")?.dataset.k; if (k == null) return;
     if (k === "x") buf = buf.slice(0, -1); else if (buf.length < pin.len) buf += k;
     dots();
     if (buf.length === pin.len) {
-      if (await pinOk(buf)) { lockEl.remove(); lockEl = null; return; }
+      if (await pinOk(buf)) { unlock(); return; }
       fails++; buf = ""; lockEl.querySelector(".pin-box").classList.add("shake"); setTimeout(() => { lockEl?.querySelector(".pin-box")?.classList.remove("shake"); dots(); }, 400);
-      if (fails >= 5) { localStorage.removeItem(PIN_KEY); lockEl.remove(); lockEl = null; $("#sign-out").click(); }   // too many tries: sign in with the password again
+      if (fails >= 5) tooMany();
     }
   });
 }
-document.addEventListener("visibilitychange", () => { if (document.hidden) hiddenAt = Date.now(); else if (hiddenAt && Date.now() - hiddenAt > 30000) showLock(); });
+async function leaveSignOut() {
+  try { localStorage.removeItem(AWAY_KEY); sessionStorage.setItem("ns-idle", "left"); } catch { /* storage blocked */ }
+  try { await supabase.auth.signOut(); } catch { /* ignore */ }
+  location.reload();
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    if (picking()) return;
+    hiddenAt = Date.now();
+    if (getPin()) showLock(); else { try { localStorage.setItem(AWAY_KEY, "1"); } catch { /* ignore */ } }
+  } else if (!getPin() && !picking() && hiddenAt) leaveSignOut();
+});
 showLock();
+try { if (!getPin() && localStorage.getItem(AWAY_KEY)) leaveSignOut(); } catch { /* ignore */ }   // the app was closed while away
 
 /* ---------- member: order history + replies ---------- */
 const seenOrders = new Map();
@@ -916,8 +994,8 @@ $("#clear-chat").addEventListener("click", async () => {
   const plain = myMessages.filter(m => !parseTagged(m) && !hiddenIds.has(String(m.id)) && !hasDone(m));
   if (plain.length && await ask("Delete your whole conversation with the shadow? This can't be undone.", "Delete")) deleteMessages(plain);
 });
-/* sign out after 5 minutes without a tap, a key or a swipe (also when the app comes back from the background) */
-const IDLE_MS = 5 * 60 * 1000;
+/* sign out after 12 hours without a tap, a key or a swipe (also when the app comes back from the background) */
+const IDLE_MS = 12 * 60 * 60 * 1000;
 let lastActive = Date.now(), idleOut = false;
 ["pointerdown", "pointermove", "keydown", "touchstart", "wheel", "input"].forEach(ev => addEventListener(ev, () => { lastActive = Date.now(); }, { passive: true, capture: true }));
 const idleCheck = async () => {
@@ -931,6 +1009,7 @@ setInterval(idleCheck, 10000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) idleCheck(); });
 $("#sign-out").addEventListener("click", async () => {
   try { await window.nightshopPwa?.release?.(supabase); } catch { /* alerts cleanup is best effort */ }
+  try { localStorage.removeItem(AWAY_KEY); } catch { /* ignore */ }
   await supabase.auth.signOut(); location.reload();
 });
 
@@ -959,7 +1038,9 @@ if (isOwner) {
 
 
   /* ----- balances: what each member owes (the owner logs it; the member sees the same numbers in their profile) ----- */
-  let balMembers = [], balRows = [], balOpen = null;
+  let balMembers = [], balRows = [], balOpen = null, balView = "members";
+  let walkins = [], walkRows = [], walkOpen = null, walkError = false;
+  const walkSum = id => walkRows.filter(r => r.walkin_id === id).reduce((t, r) => t + Number(r.amount), 0);
   const sumFor = id => balRows.filter(r => r.customer_id === id).reduce((t, r) => t + Number(r.amount), 0);
   async function loadBalances() {
     const [people, entries] = await Promise.all([
@@ -968,13 +1049,42 @@ if (isOwner) {
     ]);
     if (people.error || entries.error) { $("#owner-balances").textContent = "Could not load balances."; return; }
     balMembers = people.data || []; balRows = entries.data || [];
+    const [w, wl] = await Promise.all([
+      supabase.from("walkins").select("id,name,created_at").order("name"),
+      supabase.from("walkin_ledger").select("id,walkin_id,amount,note,created_at").order("created_at", { ascending: false }).limit(2000)
+    ]);
+    walkError = Boolean(w.error || wl.error);
+    walkins = w.data || []; walkRows = wl.data || [];
     renderBalances();
   }
+  const balViews = () => `<div class="tabs bal-views" id="bal-views"><button type="button" data-bv="members" class="${balView === "members" ? "on" : ""}">Members</button><button type="button" data-bv="walkins" class="${balView === "walkins" ? "on" : ""}">Walk-ins</button></div>`;
+  function renderWalkins() {
+    const box = $("#owner-balances");
+    const total = walkins.reduce((t, p) => t + Math.max(0, walkSum(p.id)), 0);
+    const rows = [...walkins].sort((x, y) => walkSum(y.id) - walkSum(x.id));
+    box.innerHTML = balViews() + (walkError ? '<p class="muted small">Could not load walk-in balances.</p>' : `<div class="bal-total">OWED BY WALK-INS <b>${money(total)}</b></div>
+      <form class="wal-add" id="wal-add" autocomplete="off"><input name="name" maxlength="60" placeholder="Name of someone without an account" required><button type="submit">➕ Add person</button></form>` + (rows.map(p => {
+      const due = walkSum(p.id), open = walkOpen === p.id;
+      const label = due > 0 ? money(due) + " owed" : due < 0 ? money(-due) + " credit" : "Settled";
+      const entries = walkRows.filter(r => r.walkin_id === p.id);
+      const detail = open ? `<div class="bal-detail">
+        <form class="bal-form wal-form" data-walkin="${safe(p.id)}" autocomplete="off">
+          <input name="amount" type="number" inputmode="decimal" step="0.01" min="0.01" max="99999" placeholder="Amount $" required>
+          <input name="note" maxlength="200" placeholder="What for? (optional)">
+          <div class="app-row"><button type="submit" data-kind="charge">➕ They owe this</button><button type="submit" class="ghost" data-kind="payment">💵 Payment received</button></div>
+        </form>
+        ${entries.map(r => `<div class="bal-entry"><span>${when(r.created_at)}</span><span>${safe(r.note || (Number(r.amount) > 0 ? "Charge" : "Payment"))}</span><b class="${Number(r.amount) > 0 ? "owes" : "paid"}">${Number(r.amount) > 0 ? "+" : "−"}${money(Math.abs(r.amount))}</b><button type="button" class="bal-x" data-wdel="${safe(r.id)}" aria-label="Delete entry">✕</button></div>`).join("")}
+        <button type="button" class="ghost pf-danger-lite" data-wperson-del="${safe(p.id)}">Remove this person</button>
+      </div>` : "";
+      return `<div class="row-card bal-row ${open ? "open" : ""}"><div class="bal-head" data-wbal="${safe(p.id)}"><div><b>${safe(p.name)}</b><small>Walk-in · no account</small></div><span class="bal-amt ${due > 0 ? "owes" : "clear"}">${label}</span></div>${detail}</div>`;
+    }).join("") || '<p class="muted small">No walk-ins yet. Add a name above.</p>'));
+  }
   function renderBalances() {
+    if (balView === "walkins") { renderWalkins(); return; }
     const box = $("#owner-balances");
     const total = balMembers.reduce((t, m) => t + Math.max(0, sumFor(m.id)), 0);
     const rows = [...balMembers].sort((x, y) => sumFor(y.id) - sumFor(x.id));
-    box.innerHTML = `<div class="bal-total">TOTAL OWED TO YOU <b>${money(total)}</b></div>` + (rows.map(m => {
+    box.innerHTML = balViews() + `<div class="bal-total">TOTAL OWED TO YOU <b>${money(total)}</b></div>` + (rows.map(m => {
       const due = sumFor(m.id), open = balOpen === m.id;
       const label = due > 0 ? money(due) + " owed" : due < 0 ? money(-due) + " credit" : "Settled";
       const entries = balRows.filter(r => r.customer_id === m.id);
@@ -990,6 +1100,24 @@ if (isOwner) {
     }).join("") || '<p class="muted small">No members yet.</p>');
   }
   $("#owner-balances").addEventListener("click", async event => {
+    const view = event.target.closest("[data-bv]");
+    if (view) { balView = view.dataset.bv; renderBalances(); return; }
+    const whead = event.target.closest("[data-wbal]");
+    if (whead) { walkOpen = walkOpen === whead.dataset.wbal ? null : whead.dataset.wbal; renderBalances(); return; }
+    const wdel = event.target.closest("[data-wdel]");
+    if (wdel) {
+      if (!(await ask("Delete this entry? Their balance changes right away.", "Delete"))) return;
+      const { error } = await supabase.from("walkin_ledger").delete().eq("id", wdel.dataset.wdel);
+      if (error) { console.error(error); toast("Could not delete it.", "alert"); return; }
+      await loadBalances(); return;
+    }
+    const wperson = event.target.closest("[data-wperson-del]");
+    if (wperson) {
+      if (!(await ask("Remove this person and everything logged for them?", "Remove"))) return;
+      const { error } = await supabase.from("walkins").delete().eq("id", wperson.dataset.wpersonDel);
+      if (error) { console.error(error); toast("Could not remove them.", "alert"); return; }
+      walkOpen = null; await loadBalances(); return;
+    }
     const head = event.target.closest("[data-bal]");
     if (head) { balOpen = balOpen === head.dataset.bal ? null : head.dataset.bal; renderBalances(); return; }
     const del = event.target.closest("[data-bal-del]");
@@ -1002,6 +1130,22 @@ if (isOwner) {
   });
   $("#owner-balances").addEventListener("submit", async event => {
     event.preventDefault();
+    const add = event.target.closest("#wal-add");
+    if (add) {
+      const name = add.elements.name.value.trim().slice(0, 60); if (!name) return;
+      const { data, error } = await supabase.from("walkins").insert({ name }).select("id").single();
+      if (error) { console.error(error); toast("Could not add them.", "alert"); return; }
+      walkOpen = data?.id || null; await loadBalances(); return;
+    }
+    const wform = event.target.closest(".wal-form");
+    if (wform) {
+      const kind = event.submitter?.dataset.kind || "charge", amount = Math.round(Number(wform.elements.amount.value) * 100) / 100;
+      if (!(amount > 0)) { toast("Enter an amount above zero.", "alert"); return; }
+      const { error } = await supabase.from("walkin_ledger").insert({ walkin_id: wform.dataset.walkin, amount: kind === "payment" ? -amount : amount, note: wform.elements.note.value.trim().slice(0, 200) });
+      if (error) { console.error(error); toast("Could not save that.", "alert"); return; }
+      toast(kind === "payment" ? "Payment recorded." : "Added to what they owe.");
+      await loadBalances(); return;
+    }
     const form = event.target.closest(".bal-form"); if (!form) return;
     const kind = event.submitter?.dataset.kind || "charge", amount = Math.round(Number(form.elements.amount.value) * 100) / 100;
     if (!(amount > 0)) { toast("Enter an amount above zero.", "alert"); return; }

@@ -14,7 +14,8 @@ const tagOf = (m) => { const h = TAG.exec(String(m?.message || "")); return h ? 
 // Decide who gets what. Texts are deliberately generic: lock screens can be seen by other people.
 export function plan(table, type, rec, old) {
   const out = [];
-  const push = (to, body, go, tag) => out.push({ to, payload: { title: "Lu’s Lounge", body, go, tag } });
+  const GENERIC = "Go to the lounge";                                    // every alert says the same thing: nothing private on a lock screen
+  const push = (to, body, go, tag) => out.push({ to, payload: { title: "Lu’s Lounge", body: GENERIC, go, tag } });
   if (!rec) return out;
   if (table === "orders") {
     if (type === "INSERT") push("owners", "New order 🛎️", "o-order:" + rec.id, "order-" + rec.id);

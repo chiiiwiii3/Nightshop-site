@@ -98,11 +98,13 @@ const ownerOrdersMarkup = isOwner ? `
     ${tabsMarkup("owner-tabs", "Active", "History", "💵 Balances")}
     <h3 id="owner-orders-title">INCOMING ORDERS</h3>
     <div id="owner-orders" class="stack">Loading…</div>
+    <div id="owner-balances" hidden></div>` : "";
+const ownerMessagesMarkup = isOwner ? `
+    ${tabsMarkup("msg-tabs", "Open", "History")}
     <h3 id="owner-messages-title">CUSTOMER MESSAGES</h3>
     <div id="owner-messages" class="stack">Loading…</div>
     <h3 id="owner-help-title" hidden>HELP REQUESTS · FROM OUTSIDE</h3>
-    <div id="owner-help" class="stack" hidden></div>
-    <div id="owner-balances" hidden></div>` : "";
+    <div id="owner-help" class="stack" hidden></div>` : "";
 const ownerControlsMarkup = isOwner ? `
     <h3>SHOP LIGHTS</h3>
     <button id="toggle-shop" class="lights-btn" type="button">💡 LIGHTS</button>
@@ -140,8 +142,8 @@ const ownerControlsMarkup = isOwner ? `
     <input id="painting-upload" type="file" accept="image/jpeg,image/png,image/webp">
     <div class="app-row"><button type="button" class="ghost" id="painting-reset">Put the gator back</button></div>
     <p id="painting-status" aria-live="polite"></p>` : "";
-const ownerTabsMarkup = isOwner ? '<div class="tabs pf-top" id="pf-top"><button type="button" data-pane="me" class="on">👤 Profile</button><button type="button" data-pane="orders">🧾 Orders</button><button type="button" data-pane="controls">⚙ Controls</button></div>' : "";
-const ownerPanes = isOwner ? `<div class="pf-pane owner-pane" data-pane="orders" hidden>${ownerOrdersMarkup}</div><div class="pf-pane owner-pane" data-pane="controls" hidden>${ownerControlsMarkup}</div>` : "";
+const ownerTabsMarkup = isOwner ? '<div class="tabs pf-top" id="pf-top"><button type="button" data-pane="me" class="on">👤 Profile</button><button type="button" data-pane="orders">🧾 Orders</button><button type="button" data-pane="messages" id="msg-pane-btn">💬 Messages</button><button type="button" data-pane="controls">⚙ Controls</button></div>' : "";
+const ownerPanes = isOwner ? `<div class="pf-pane owner-pane" data-pane="orders" hidden>${ownerOrdersMarkup}</div><div class="pf-pane owner-pane" data-pane="messages" hidden>${ownerMessagesMarkup}</div><div class="pf-pane owner-pane" data-pane="controls" hidden>${ownerControlsMarkup}</div>` : "";
 
 root.innerHTML = `
 <div class="nsx">
@@ -1022,27 +1024,38 @@ if (isOwner) {
     return out.join("");
   }).join("");
 
-  let ownerTab = "active";
+  let ownerFreshMsgs = false;
+  let ownerTab = "active", msgTab = "active";
   const ownerRows = () => ownerOrders.map(o => { const thread = threadFor(o.id, ownerMsgs, o.customer_id); return { o, thread, done: isDone(o, thread), finished: isFinished(o, thread) }; });
   // order chats show on their order card; show a message on its own only if no matching order is loaded
   const ownerPlain = () => ownerMsgs.filter(m => { const t = parseTagged(m); return !t || !ownerOrders.some(o => String(o.id) === t.orderId && o.customer_id === m.customer_id); });
   function refreshOwnerCounts() {
     const rows = ownerRows(), plain = ownerPlain();
-    $("#owner-tabs-count-active").textContent = rows.filter(r => !r.finished).length + plain.filter(m => !hasDone(m)).length;
-    $("#owner-tabs-count-history").textContent = rows.filter(r => r.finished).length + plain.filter(hasDone).length;
+    $("#owner-tabs-count-active").textContent = rows.filter(r => !r.finished).length;
+    $("#owner-tabs-count-history").textContent = rows.filter(r => r.finished).length;
+    $("#msg-tabs-count-active").textContent = plain.filter(m => !hasDone(m)).length + helpRows.length;
+    $("#msg-tabs-count-history").textContent = plain.filter(hasDone).length;
+    const fresh = plain.some(m => !hasDone(m) && !m.reply) || helpRows.length > 0;     // a message nobody has answered yet
+    const mb = $("#msg-pane-btn"); if (mb) mb.classList.toggle("has-new", fresh);
+    ownerFreshMsgs = fresh;
   }
   function setOwnerTab(tab) {
     ownerTab = tab;
     $$("#owner-tabs [data-tab]").forEach(btn => btn.classList.toggle("on", btn.dataset.tab === tab));
     const onBalances = tab === "balances";
-    ["#owner-orders-title", "#owner-orders", "#owner-messages-title", "#owner-messages"].forEach(sel => { $(sel).hidden = onBalances; });
-    ownerHelpRender();
+    ["#owner-orders-title", "#owner-orders"].forEach(sel => { $(sel).hidden = onBalances; });
     $("#owner-balances").hidden = !onBalances;
     if (onBalances) { loadBalances(); return; }
     $("#owner-orders-title").textContent = tab === "history" ? "PAST ORDERS" : "INCOMING ORDERS";
-    $("#owner-messages-title").textContent = tab === "history" ? "OLD MESSAGES" : "CUSTOMER MESSAGES";
-    renderOwnerOrders(); renderOwnerMessages();
+    renderOwnerOrders();
   }
+  function setMsgTab(tab) {
+    msgTab = tab;
+    $$("#msg-tabs [data-tab]").forEach(btn => btn.classList.toggle("on", btn.dataset.tab === tab));
+    $("#owner-messages-title").textContent = tab === "history" ? "OLD MESSAGES" : "CUSTOMER MESSAGES";
+    ownerHelpRender(); renderOwnerMessages();
+  }
+  $("#msg-tabs").addEventListener("click", event => { const btn = event.target.closest("[data-tab]"); if (btn) setMsgTab(btn.dataset.tab); });
   $("#owner-tabs").addEventListener("click", event => { const btn = event.target.closest("[data-tab]"); if (btn) setOwnerTab(btn.dataset.tab); });
 
   function renderOwnerOrders() {
@@ -1066,7 +1079,7 @@ if (isOwner) {
   /* notes left through the shadowman window outside (people locked out or with questions) */
   let helpRows = [];
   function ownerHelpRender() {
-    const show = helpRows.length > 0 && ownerTab !== "balances";
+    const show = helpRows.length > 0 && msgTab !== "history";
     $("#owner-help-title").hidden = !show; $("#owner-help").hidden = !show;
     $("#owner-help").innerHTML = helpRows.map(r => `<div class="row-card"><div><b>${safe(r.name)}</b> · <small>${safe(r.contact)}</small><small>${safe(when(r.created_at))}</small><div class="reply">${safe(r.message)}</div></div><div class="decide"><button type="button" class="d-done" data-help-del="${safe(r.id)}">Done</button></div></div>`).join("");
   }
@@ -1077,14 +1090,14 @@ if (isOwner) {
     const { error } = await supabase.from("messages").update({ reply: DONE, replied_at: new Date().toISOString() }).eq("id", btn.dataset.helpDel);
     if (error) { btn.disabled = false; return; }
     helpRows = helpRows.filter(r => String(r.id) !== btn.dataset.helpDel); ownerHelpRender();
-    $$("#open-profile, .spot-profile").forEach(el => { if (!helpRows.length) el.classList.remove("has-new"); });
+    $$("#open-profile, .spot-profile").forEach(el => { if (!helpRows.length && !ownerFreshMsgs) el.classList.remove("has-new"); }); refreshOwnerCounts();
   });
 
   loadOwnerOrders = async () => {
     const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at").order("created_at", { ascending: false }).limit(100);
     if (error) { $("#owner-orders").textContent = "Could not load orders."; return; }
     ownerOrders = data || [];
-    const waiting = helpRows.length > 0 || ownerOrders.some(o => cls(o.status) === "pending" && !isDone(o, threadFor(o.id, ownerMsgs, o.customer_id)));
+    const waiting = helpRows.length > 0 || ownerFreshMsgs || ownerOrders.some(o => cls(o.status) === "pending" && !isDone(o, threadFor(o.id, ownerMsgs, o.customer_id)));
     $$("#open-profile, .spot-profile").forEach(el => el.classList.toggle("has-new", waiting));   // a dot on the profile buttons: something needs you
     await learnNames(ownerOrders.map(o => o.customer_id));
     renderOwnerOrders();
@@ -1152,7 +1165,8 @@ if (isOwner) {
     const all = data || [], isHelpRow = m => m.customer_id == null && String(m.message).startsWith("🆘HELP|");
     helpRows = all.filter(m => isHelpRow(m) && !hasDone(m)).map(m => { const [, name = "", contact = "", ...rest] = String(m.message).split("|"); return { id: m.id, name, contact, message: rest.join("|"), created_at: m.created_at }; });
     ownerHelpRender();
-    if (helpRows.length) $$("#open-profile, .spot-profile").forEach(el => el.classList.add("has-new"));
+    refreshOwnerCounts();
+    if (helpRows.length || ownerFreshMsgs) $$("#open-profile, .spot-profile").forEach(el => el.classList.add("has-new"));
     ownerMsgs = all.filter(m => !isHelpRow(m));
     await learnNames(ownerMsgs.map(m => m.customer_id));
     renderOwnerMessages();
@@ -1171,15 +1185,15 @@ if (isOwner) {
   };
   function renderOwnerMessages() {
     const box = $("#owner-messages");
-    const plain = ownerPlain().filter(m => ownerTab === "history" ? hasDone(m) : !hasDone(m)).slice(0, 60);
+    const plain = ownerPlain().filter(m => msgTab === "history" ? hasDone(m) : !hasDone(m)).slice(0, 60);
     refreshOwnerCounts();
     patch(box, plain.map(m => {
       const name = safe(ownerNames.get(m.customer_id) || "Member");
       const lines = replyLines(m.reply).map(l => safe(l)).join("\n");
       const head = `<b>${name}</b><small>${safe(m.message.replace(TAG, ""))} · ${when(m.created_at)}</small>${lines ? `<div class="reply">You: ${lines}</div>` : ""}`;
-      if (ownerTab === "history") return `<div class="row-card msg is-done" data-msg="${safe(m.id ?? "")}"><div>${head}</div><div class="decide"><button type="button" class="d-wait" data-msg-reopen="${safe(m.id ?? "")}">↩ Reopen</button></div></div>`;
+      if (msgTab === "history") return `<div class="row-card msg is-done" data-msg="${safe(m.id ?? "")}"><div>${head}</div><div class="decide"><button type="button" class="d-wait" data-msg-reopen="${safe(m.id ?? "")}">↩ Reopen</button></div></div>`;
       return `<form class="row-card msg reply-form" data-msg="${safe(m.id ?? "")}" data-append="1"><div>${head}<div class="msg-bar small-bar"><input data-draft="m:${safe(m.id ?? "")}" name="reply" maxlength="1000" placeholder="${lines ? "Send another reply…" : "Reply as the shadow…"}" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></div><div class="decide"><button type="button" class="d-done" data-msg-done="${safe(m.id ?? "")}">✅ Done · move to history</button></div></div></form>`;
-    }).join("") || (ownerTab === "history" ? "No old messages yet." : "No messages."));
+    }).join("") || (msgTab === "history" ? "No old messages yet." : "No messages."));
   }
   ownerShow.order = id => {
     openProfile("orders");
@@ -1188,9 +1202,9 @@ if (isOwner) {
     setTimeout(() => flash(orderCard(id)), 100);
   };
   ownerShow.message = id => {
-    openProfile("orders");
+    openProfile("messages");
     const m = ownerMsgs.find(x => String(x.id) === String(id));
-    setOwnerTab(m && hasDone(m) ? "history" : "active");
+    setMsgTab(m && hasDone(m) ? "history" : "active");
     setTimeout(() => flash($('#owner-messages [data-msg="' + id + '"]')), 100);
   };
   async function sendOwnerReply(event) {

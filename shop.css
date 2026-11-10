@@ -470,3 +470,6 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 .inv-btns button[data-level=ok].on{background:#18703a;border-color:#38ff7a}
 .inv-btns button[data-level=low].on{background:#8a5a06;border-color:#ffb02e;color:#fff}
 .inv-btns button[data-level=out].on{background:#8b1730;border-color:#ff3358;color:#fff}
+#pf-top [data-pane]{position:relative}
+#pf-top .has-new:after{content:"";position:absolute;top:2px;right:4px;width:10px;height:10px;border-radius:50%;background:#ff3358;border:2px solid #fff;box-shadow:0 0 8px #ff3358}
+#pf-top button{padding:9px 4px;font-size:11px;letter-spacing:.4px;white-space:nowrap}

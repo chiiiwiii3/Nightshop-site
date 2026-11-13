@@ -488,3 +488,7 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 .pin-lock .pat-dot{width:26px;height:26px}
 .bal-views{margin:0 0 12px}
 .wal-add{display:flex;gap:8px;margin:0 0 12px}.wal-add input{flex:1;min-width:0}.wal-add button{white-space:nowrap}
+.pf-memos{display:grid;gap:8px}.memo{padding:10px 12px;border:1px solid #e9b93a66;border-radius:12px;background:#0006}.memo p{margin:0 0 4px;white-space:pre-wrap;overflow-wrap:anywhere}.memo small{opacity:.7}
+#memo-form textarea{width:100%;box-sizing:border-box;margin-bottom:8px;resize:vertical}
+.memo-text{white-space:pre-wrap;overflow-wrap:anywhere}.member-row{align-items:center}.member-meta{text-align:right;display:grid;gap:4px;justify-items:end}
+#pf-top{flex-wrap:wrap}#pf-top button{flex:1 1 30%}

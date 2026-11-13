@@ -142,8 +142,17 @@ const ownerControlsMarkup = isOwner ? `
     <input id="painting-upload" type="file" accept="image/jpeg,image/png,image/webp">
     <div class="app-row"><button type="button" class="ghost" id="painting-reset">Put the gator back</button></div>
     <p id="painting-status" aria-live="polite"></p>` : "";
-const ownerTabsMarkup = isOwner ? '<div class="tabs pf-top" id="pf-top"><button type="button" data-pane="me" class="on">👤 Profile</button><button type="button" data-pane="orders">🧾 Orders</button><button type="button" data-pane="messages" id="msg-pane-btn">💬 Messages</button><button type="button" data-pane="controls">⚙ Controls</button></div>' : "";
-const ownerPanes = isOwner ? `<div class="pf-pane owner-pane" data-pane="orders" hidden>${ownerOrdersMarkup}</div><div class="pf-pane owner-pane" data-pane="messages" hidden>${ownerMessagesMarkup}</div><div class="pf-pane owner-pane" data-pane="controls" hidden>${ownerControlsMarkup}</div>` : "";
+const ownerTabsMarkup = isOwner ? '<div class="tabs pf-top" id="pf-top"><button type="button" data-pane="me" class="on">👤 Profile</button><button type="button" data-pane="orders">🧾 Orders</button><button type="button" data-pane="messages" id="msg-pane-btn">💬 Messages</button><button type="button" data-pane="members">👥 Members</button><button type="button" data-pane="controls">⚙ Controls</button></div>' : "";
+const ownerMembersMarkup = isOwner ? `
+    <h3>MEMO BOARD</h3>
+    <p class="muted small">Post a notice that shows on every member's profile, like holiday hours.</p>
+    <form id="memo-form" autocomplete="off"><textarea name="body" id="memo-body" maxlength="600" rows="3" placeholder="Write a notice for all members…" required></textarea><button type="submit" class="lights-btn">📌 POST TO ALL MEMBERS</button></form>
+    <p id="memo-status" class="small" aria-live="polite"></p>
+    <div id="memo-list" class="stack"></div>
+    <h3>MEMBERS <span class="count" id="mem-count">0</span></h3>
+    <p class="muted small">Only you can see this list. Members can only ever see their own profile.</p>
+    <div id="mem-list" class="stack">Loading…</div>` : "";
+const ownerPanes = isOwner ? `<div class="pf-pane owner-pane" data-pane="members" hidden>${ownerMembersMarkup}</div>`+`<div class="pf-pane owner-pane" data-pane="orders" hidden>${ownerOrdersMarkup}</div><div class="pf-pane owner-pane" data-pane="messages" hidden>${ownerMessagesMarkup}</div><div class="pf-pane owner-pane" data-pane="controls" hidden>${ownerControlsMarkup}</div>` : "";
 
 root.innerHTML = `
 <div class="nsx">
@@ -254,6 +263,10 @@ root.innerHTML = `
             <div class="pf-name" id="pf-name"></div>
             <button type="button" class="pf-btn" id="pf-photo">📷 Add Profile Photo</button>
             <input type="file" id="pf-file" accept="image/*" hidden>
+          </section>
+          <section class="pf-box pf-memo" id="pf-memo-box" hidden>
+            <h3><span class="pf-ico">📌</span> Memo board</h3>
+            <div id="pf-memos" class="pf-memos"></div>
           </section>
           <section class="pf-box pf-balance" id="pf-balance-box">
             <h3>Balance</h3>
@@ -680,9 +693,14 @@ function paintAvatars() {
     if (myAvatar) { const img = new Image(); img.alt = ""; img.src = myAvatar; el.append(img); } else el.innerHTML = SILHOUETTE;
   }
 }
-let myLedger = [];
+let myLedger = [], myMemos = [];
+async function loadMemos() {
+  const { data, error } = await supabase.from("memos").select("id,body,created_at").order("created_at", { ascending: false }).limit(8);
+  if (!error) myMemos = data || [];
+}
 async function loadLedger() {
   if (isOwner) return;
+  await loadMemos();
   const { data, error } = await supabase.from("ledger").select("id,amount,note,created_at").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(200);
   if (!error) myLedger = data || [];
 }
@@ -690,6 +708,8 @@ let pfTab = "open";
 function renderProfile() {
   $("#pf-name").textContent = profile.display_name || "Member";
   paintAvatars();
+  $("#pf-memo-box").hidden = isOwner || !myMemos.length;
+  $("#pf-memos").innerHTML = myMemos.map(m => `<div class="memo"><p>${safe(m.body)}</p><small>${when(m.created_at)}</small></div>`).join("");
   $("#pf-balance-box").hidden = isOwner; $("#pf-msg-box").hidden = isOwner; $("#pf-del-row").hidden = isOwner;
   const due = Math.round(myLedger.reduce((sum, r) => sum + Number(r.amount), 0) * 100) / 100;
   $("#pf-due").textContent = money(Math.abs(due));
@@ -708,7 +728,9 @@ function renderProfile() {
   const isPat = hasPin && getPin().type === "pattern";
   $("#pf-pin-form").elements.cur.hidden = !hasPin || isPat; $("#pf-pin-form").elements.cur.required = hasPin && !isPat; $("#pf-cur-pat").hidden = !isPat; $("#pf-pin-off").hidden = !hasPin;
 }
+const paneHooks = {};
 function setPfPane(name) {
+  if (paneHooks[name]) paneHooks[name]();
   $$(".pf-pane").forEach(p => { p.hidden = p.dataset.pane !== name; });
   $$("#pf-top [data-pane]").forEach(b => b.classList.toggle("on", b.dataset.pane === name));
 }
@@ -1153,6 +1175,41 @@ if (isOwner) {
     if (error) { console.error(error); toast("Could not save that.", "alert"); return; }
     toast(kind === "payment" ? "Payment recorded." : "Added to what they owe.");
     await loadBalances();
+  });
+
+  /* ----- memo board + member list (owner only; members can never see each other) ----- */
+  let memoRows = [];
+  async function loadMembersPane() {
+    const [memos, people, ledger] = await Promise.all([
+      supabase.from("memos").select("id,body,created_at").order("created_at", { ascending: false }).limit(30),
+      supabase.from("profiles").select("id,display_name,username,access_enabled,created_at").eq("is_owner", false).order("display_name"),
+      supabase.from("ledger").select("customer_id,amount").limit(5000)
+    ]);
+    if (!memos.error) memoRows = memos.data || [];
+    $("#memo-list").innerHTML = memoRows.map(m => `<div class="row-card memo-row"><div><div class="memo-text">${safe(m.body)}</div><small>${safe(when(m.created_at))}</small></div><div class="decide"><button type="button" class="d-deny" data-memo-del="${safe(m.id)}">Delete</button></div></div>`).join("") || '<p class="muted small">No memos posted.</p>';
+    if (people.error) { $("#mem-list").textContent = "Could not load members."; return; }
+    const owed = new Map(); (ledger.data || []).forEach(r => owed.set(r.customer_id, (owed.get(r.customer_id) || 0) + Number(r.amount)));
+    const list = people.data || [];
+    $("#mem-count").textContent = list.length;
+    $("#mem-list").innerHTML = list.map(p => { const due = Math.round((owed.get(p.id) || 0) * 100) / 100;
+      return `<div class="row-card member-row"><div><b>${safe(p.display_name || p.username || "Member")}</b><small>${safe(p.username ? "@" + p.username : "")} · joined ${safe(new Date(p.created_at).toLocaleDateString())}</small></div><div class="member-meta"><span class="status ${p.access_enabled ? "status-confirmed" : "status-denied"}">${p.access_enabled ? "Active" : "No access"}</span><small class="${due > 0 ? "owes" : ""}">${due > 0 ? money(due) + " owed" : due < 0 ? money(-due) + " credit" : "Settled"}</small></div></div>`; }).join("") || '<p class="muted small">No members yet.</p>';
+  }
+  paneHooks.members = loadMembersPane;
+  $("#memo-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const body = $("#memo-body").value.trim(); if (!body) return;
+    const btn = event.submitter; if (btn) btn.disabled = true;
+    const { error } = await supabase.from("memos").insert({ body: body.slice(0, 600) });
+    if (btn) btn.disabled = false;
+    if (error) { console.error(error); $("#memo-status").textContent = "Could not post it. Try again."; return; }
+    $("#memo-body").value = ""; $("#memo-status").textContent = "Posted. Members see it on their profile."; await loadMembersPane();
+  });
+  $("#memo-list").addEventListener("click", async event => {
+    const del = event.target.closest("[data-memo-del]"); if (!del) return;
+    if (!(await ask("Take this memo down for everyone?", "Delete"))) return;
+    const { error } = await supabase.from("memos").delete().eq("id", del.dataset.memoDel);
+    if (error) { toast("Could not delete it.", "alert"); return; }
+    await loadMembersPane();
   });
 
   const knownPending = new Set();

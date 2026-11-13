@@ -697,6 +697,16 @@ let myLedger = [], myMemos = [];
 async function loadMemos() {
   const { data, error } = await supabase.from("memos").select("id,body,created_at").order("created_at", { ascending: false }).limit(8);
   if (!error) myMemos = data || [];
+  if (isOwner) return;
+  let seen = null; try { seen = localStorage.getItem("ns-memo-seen"); } catch { /* storage blocked */ }
+  const newest = myMemos[0]?.id || null;
+  if (newest && seen === null) { try { localStorage.setItem("ns-memo-seen", newest); } catch { /* ignore */ } }   // first run: nothing counts as new
+  else if (newest && newest !== seen) $$("#open-profile, .spot-profile").forEach(el => el.classList.add("has-new"));   // a dot until they open their profile
+}
+function markMemosSeen() {
+  if (isOwner || !myMemos[0]) return;
+  try { localStorage.setItem("ns-memo-seen", myMemos[0].id); } catch { /* ignore */ }
+  $$("#open-profile, .spot-profile").forEach(el => el.classList.remove("has-new"));
 }
 async function loadLedger() {
   if (isOwner) return;
@@ -735,7 +745,7 @@ function setPfPane(name) {
   $$("#pf-top [data-pane]").forEach(b => b.classList.toggle("on", b.dataset.pane === name));
 }
 function openProfile(pane = "me") {
-  Promise.all([loadOrders(), loadMessages(), loadLedger()]).finally(renderProfile);
+  Promise.all([loadOrders(), loadMessages(), loadLedger()]).finally(() => { renderProfile(); markMemosSeen(); });
   renderProfile();
   Object.values(SUBS).forEach(sel => { $(sel).hidden = true; });
   if (!isOwner) $("#pf-msg").hidden = false;               // the conversations are open as soon as the profile opens
@@ -903,7 +913,10 @@ document.addEventListener("visibilitychange", () => {
   } else if (!getPin() && !picking() && hiddenAt) leaveSignOut();
 });
 showLock();
-try { if (!getPin() && localStorage.getItem(AWAY_KEY)) leaveSignOut(); } catch { /* ignore */ }   // the app was closed while away
+try {
+  const navType = performance.getEntriesByType("navigation")[0]?.type;
+  if (!getPin() && localStorage.getItem(AWAY_KEY)) { if (navType === "reload") localStorage.removeItem(AWAY_KEY); else leaveSignOut(); }   // opened again after being away (a plain refresh doesn't count)
+} catch { /* ignore */ }
 
 /* ---------- member: order history + replies ---------- */
 const seenOrders = new Map();
@@ -1625,10 +1638,10 @@ function loadPainting() {
 loadPainting();
 
 /* ---------- first load, then check for news every 15 seconds ---------- */
-await Promise.all([refreshStatus(), loadOrders(), loadMessages(), loadOwnerOrders(), loadOwnerMessages(), loadHelp()]);
+await Promise.all([refreshStatus(), loadOrders(), loadMessages(), loadOwnerOrders(), loadOwnerMessages(), loadHelp(), isOwner ? 0 : loadMemos()]);
 const poll = () => {
   if (document.hidden) return;
-  Promise.allSettled([refreshStatus(), loadOrders(), loadMessages(), loadOwnerOrders(), loadOwnerMessages(), loadHelp()]);
+  Promise.allSettled([refreshStatus(), loadOrders(), loadMessages(), loadOwnerOrders(), loadOwnerMessages(), loadHelp(), isOwner ? 0 : loadMemos()]);
 };
 setInterval(poll, 15000);
 document.addEventListener("visibilitychange", poll);
@@ -1641,6 +1654,7 @@ function handleGo(go) {
   else if (kind === "o-msg" && isOwner) ownerShow.message(id);
   else if (kind === "order" || kind === "history") showOrder(id);
   else if (kind === "msg") openBath(id);
+  else if (kind === "memo" && !isOwner) openProfile();
 }
 try {
   const go = new URLSearchParams(location.search).get("go");

@@ -25,6 +25,7 @@ export function plan(table, type, rec, old) {
       if (text) push(rec.customer_id, text, (s === "denied" || s === "done" ? "history:" : "order:") + rec.id, "order-" + rec.id);
     }
   }
+  if (table === "memos" && type === "INSERT") push("members", "New memo", "memo:" + rec.id, "memo-" + rec.id);   // the memo board: everyone gets the same short alert
   if (table === "messages") {
     const orderId = tagOf(rec);
     if (type === "INSERT") {
@@ -54,6 +55,9 @@ export async function handle(req, env, makeClient, sender) {
     let ids;
     if (job.to === "owners") {
       const { data } = await db.from("profiles").select("id").eq("is_owner", true);
+      ids = (data || []).map((p) => p.id);
+    } else if (job.to === "members") {
+      const { data } = await db.from("profiles").select("id").eq("is_owner", false).eq("access_enabled", true);
       ids = (data || []).map((p) => p.id);
     } else ids = [job.to];
     if (!ids.length) continue;

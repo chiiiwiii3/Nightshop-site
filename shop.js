@@ -1730,10 +1730,9 @@ $("#help-replay").addEventListener("click", openTour);
 $("#help-list").innerHTML = FAQ.map(([q, a]) => `<details class="faq-item"><summary>${safe(q)}</summary><p>${safe(a)}</p></details>`).join("");
 document.addEventListener("click", event => { if (event.target.closest("[data-help]")) { helpSheet.hidden = false; } });
 document.addEventListener("keydown", event => { if (event.key === "Escape") { closeHelp(); if (!tourSheet.hidden) closeTour(); } });
-if (!isOwner) {                                                // a brand-new account gets the tour the first time it signs in on this phone
+{                                                              // everyone, owner included, sees the tour once on this phone (the ? replays it any time)
   let seen = false; try { seen = Boolean(localStorage.getItem(tourKey)); } catch { /* ignore */ }
-  const fresh = profile.created_at ? Date.now() - Date.parse(profile.created_at) < 14 * 864e5 : new URLSearchParams(location.search).has("tour");
-  if (!seen && fresh) setTimeout(openTour, 900);
+  if (!seen) setTimeout(openTour, 900);
 }
 
 /* ---------- first load, then check for news every 15 seconds ---------- */

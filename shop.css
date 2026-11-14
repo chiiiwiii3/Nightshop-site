@@ -493,3 +493,18 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 .memo-text{white-space:pre-wrap;overflow-wrap:anywhere}.member-row{align-items:center}.member-meta{text-align:right;display:grid;gap:4px;justify-items:end}
 #pf-top{flex-wrap:wrap}#pf-top button{flex:1 1 30%}
 .seg button.out,.seg button:disabled.out{opacity:.4;text-decoration:line-through;cursor:not-allowed}
+/* ? help table + shadow tutorial */
+.nsx .spot-help{position:absolute;z-index:4;left:26.3%;top:77%;width:calc(var(--wu,10px) * 5.4);height:calc(var(--wu,10px) * 5.4);margin:calc(var(--wu,10px) * -2.7) 0 0 calc(var(--wu,10px) * -2.7);padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;cursor:pointer;animation:holo-float 3.4s ease-in-out infinite}
+.spot-help .help-q{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;border:2px solid #f6c744;background:radial-gradient(circle at 50% 35%,#1d4a2b,#03110a 75%);color:#f6c744;font:700 calc(var(--wu,10px) * 3.4)/1 Georgia,serif;text-shadow:0 0 12px #f6c744;box-shadow:0 0 calc(var(--wu,10px) * 1.4) rgba(246,199,68,.75),inset 0 0 10px #000;pointer-events:none}
+.spot-help:after{content:"";position:absolute;left:12%;right:12%;bottom:-18%;height:12%;border-radius:50%;background:radial-gradient(ellipse,rgba(246,199,68,.5),transparent 70%);pointer-events:none}
+.tour-sheet{z-index:130}
+.tour-card{text-align:center}
+.shadow-head{width:96px;height:96px;border-radius:50%;object-fit:cover;object-position:50% 30%;border:2px solid #e9b93a;box-shadow:0 0 22px rgba(233,185,58,.55);margin:2px auto 4px;display:block}
+.shadow-head.small{width:68px;height:68px}
+.tour-text{margin:8px 4px 12px;line-height:1.5;font-size:15px;color:#dbe6f5}
+.tour-dots{display:flex;justify-content:center;gap:6px;margin:6px 0 14px}.tour-dots i{width:8px;height:8px;border-radius:50%;background:#ffffff33}.tour-dots i.on{background:#e9b93a;box-shadow:0 0 8px #e9b93a}
+.tour-extra{margin-top:10px;width:100%}
+.faq{display:grid;gap:8px;margin:10px 0 14px;text-align:left}
+.faq-item{border:1px solid #e9b93a55;border-radius:12px;background:#0006;padding:0 12px}
+.faq-item summary{cursor:pointer;padding:12px 0;font-weight:600;list-style:none;color:#f6e6b0}.faq-item summary::-webkit-details-marker{display:none}
+.faq-item[open] summary{border-bottom:1px solid #ffffff22}.faq-item p{margin:10px 0 12px;line-height:1.5;color:#dbe6f5}

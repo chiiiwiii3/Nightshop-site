@@ -5,7 +5,7 @@ const { data: { user } } = await supabase.auth.getUser();
 if (!user || !root) throw new Error("Member session unavailable");
 
 const { data: profile, error: profileError } = await supabase.from("profiles")
-  .select("display_name,is_owner,access_enabled,avatar").eq("id", user.id).single();
+  .select("display_name,is_owner,access_enabled,avatar,created_at").eq("id", user.id).single();
 if (profileError || !profile) {
   console.error("Profile load failed:", profileError);
   throw new Error("Could not load your member profile. Ask the owner to check your account.");
@@ -176,6 +176,7 @@ root.innerHTML = `
           <img class="lounge-painting" alt="" hidden draggable="false">
           ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
           <button type="button" class="spot-profile" data-profile aria-label="Open your profile"><img src="./art/profile-icon.png" alt="" draggable="false"></button>
+          <button type="button" class="spot-help" data-help aria-label="Questions and answers: how to use the lounge"><span class="help-q">?</span></button>
           <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:68.7%;top:27.8%;width:6.8%;height:22.6%"><span class="spot-ring"></span></button>
         </div>
         <div class="lounge-copy">
@@ -183,6 +184,7 @@ root.innerHTML = `
           <img class="lounge-painting" alt="" hidden draggable="false">
           ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
           <button type="button" class="spot-profile" data-profile aria-label="Open your profile"><img src="./art/profile-icon.png" alt="" draggable="false"></button>
+          <button type="button" class="spot-help" data-help aria-label="Questions and answers: how to use the lounge"><span class="help-q">?</span></button>
           <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:68.7%;top:27.8%;width:6.8%;height:22.6%"><span class="spot-ring"></span></button>
         </div>
         <div class="lounge-copy">
@@ -190,6 +192,7 @@ root.innerHTML = `
           <img class="lounge-painting" alt="" hidden draggable="false">
           ${ITEMS.map(item => `<button type="button" class="spot spot-${item.color}" data-product="${item.id}" aria-label="Order ${item.name}" style="left:${item.spot.l}%;top:${item.spot.t}%;width:${item.spot.w}%;height:${item.spot.h}%"><span class="holo-glyph" aria-hidden="true">${item.icon}</span><span class="spot-ring"></span><span class="spot-tag">${item.icon} ${item.name}</span></button>`).join("")}
           <button type="button" class="spot-profile" data-profile aria-label="Open your profile"><img src="./art/profile-icon.png" alt="" draggable="false"></button>
+          <button type="button" class="spot-help" data-help aria-label="Questions and answers: how to use the lounge"><span class="help-q">?</span></button>
           <button type="button" class="spot-door" data-bath aria-label="Open the bathroom window" style="left:68.7%;top:27.8%;width:6.8%;height:22.6%"><span class="spot-ring"></span></button>
         </div>
       </div>
@@ -202,6 +205,27 @@ root.innerHTML = `
 
 
 
+  <div class="sheet tour-sheet" id="tour-sheet" hidden>
+    <div class="sheet-card tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title" style="--c:#e9b93a">
+      <button type="button" class="sheet-close" id="tour-close" aria-label="Skip the tour">×</button>
+      <img class="shadow-head" src="./art/shadowman.jpg" alt="The shadow" draggable="false">
+      <h2 id="tour-title"></h2>
+      <p id="tour-text" class="tour-text"></p>
+      <div class="tour-dots" id="tour-dots" aria-hidden="true"></div>
+      <div class="app-row"><button type="button" class="ghost" id="tour-back">Back</button><button type="button" id="tour-next">Next</button></div>
+      <button type="button" class="ghost tour-extra" id="tour-extra" hidden></button>
+    </div>
+  </div>
+  <div class="sheet tour-sheet" id="help-sheet" hidden>
+    <div class="sheet-card tour-card" role="dialog" aria-modal="true" aria-labelledby="help-title" style="--c:#e9b93a">
+      <button type="button" class="sheet-close" id="help-close" aria-label="Close">×</button>
+      <img class="shadow-head small" src="./art/shadowman.jpg" alt="The shadow" draggable="false">
+      <h2 id="help-title">Ask the shadow</h2>
+      <p class="muted small">Tap a question.</p>
+      <div id="help-list" class="faq"></div>
+      <button type="button" class="ghost" id="help-replay">▶ Replay the tutorial</button>
+    </div>
+  </div>
   <div class="sheet" id="order-sheet" hidden>
     <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="order-title">
       <button type="button" class="sheet-close" id="order-close" aria-label="Close">×</button>
@@ -1656,6 +1680,61 @@ function loadPainting() {
   probe.src = url;                                           // a 404 just keeps the built-in gator
 }
 loadPainting();
+
+/* ---------- first-visit tutorial + the ? help table ---------- */
+const TOUR = [
+  { t: "Welcome to Lu’s Lounge", p: "I’m the shadow. I run the place. Let me show you around. It takes about a minute." },
+  { t: "Look around", p: "Drag or swipe the room left and right to look around, or use the ‹ › arrows. Everything you can touch glows." },
+  { t: "Order from the bar", p: "The three floating holograms on the bar are the menu: Honeydrippers, herbal teas and herbal shots. Tap one, choose what you want, and tap ORDER NOW. A hologram blinking red means it’s running low, but you can still order it. If a hologram is gone or a size is crossed off, it’s sold out." },
+  { t: "Blue lights, red lights", p: "Blue outside means the lounge is open. Red means it’s closed. When it’s closed you can still sign in to check your profile and message me, but you can’t order." },
+  { t: "What happens to your order", p: "I get an alert. I’ll mark it Confirmed, Declined or Waitlisted, and Done when it’s finished. You can chat with me about the order the whole time, to add directions or changes. Find your orders under My Orders in your profile." },
+  { t: "The bathroom door", p: "Tap the BATHROOM door to send me a private message. Ask a question, or tell me about a delivery or meet-up." },
+  { t: "Your profile", p: "Tap the floating profile icon. You’ll see your balance, the memo board with notices from the owner, your photo, and your orders. A red dot on it means something’s new." },
+  { t: "Make signing in easier", p: "Set an App Lock: a 6-digit PIN or a swipe pattern. Without one, leaving the app signs you out and you’ll need your password each time. With one, you just enter your PIN or draw your pattern.", extra: "🛡️ Set it up now" },
+  { t: "Questions? Find the ?", p: "Any time you’re stuck, tap the gold ? floating over the round table at the bottom left. Ask the shadow, and I’ll explain. Enjoy the lounge." }
+];
+const FAQ = [
+  ["What do the blue and red lights mean?", "Blue lights outside and a blue crown mean the lounge is open. Red means it’s closed. When it’s closed you can still sign in and use your profile and the bathroom door, but you can’t order."],
+  ["How do I order?", "Tap a floating hologram on the bar, pick a size and amount, then tap ORDER NOW. You’ll see it under My Orders in your profile."],
+  ["What does a blinking red hologram mean? Or a missing one?", "Blinking red: it’s running low, but you can still order it. Gone: it’s sold out. In the order screen, a size marked OUT can’t be picked."],
+  ["What do Confirmed, Declined, Waitlisted and Done mean?", "Confirmed: it’s accepted. Declined: it can’t be filled. Waitlisted: you’re in line, and I’ll tell you when it opens up. Done: it’s finished and moves to your History."],
+  ["How do I change or add to my order?", "Open your profile, find the order under My Orders, and tap Conversation. Chat with me there until it’s marked Done."],
+  ["How do I message the shadow?", "Tap the BATHROOM door in the lounge. Your messages and my replies are in your profile too."],
+  ["Where do I see what I owe?", "In your profile, under Balance. It lists every charge and payment I’ve logged for you."],
+  ["What is the memo board?", "Notices from the owner for everyone, like holiday hours. It’s in your profile, and a red dot shows when there’s a new one."],
+  ["What is App Lock?", "A 6-digit PIN or swipe pattern that stays on your phone. With it, leaving the app locks it and you just enter your PIN to get back in. Without it, leaving the app signs you out. Set it in your profile under App Lock PIN."],
+  ["I forgot my PIN or password.", "On the PIN screen, tap “Forgot it?” to sign in with your password. If you forgot your password, tap the shadowman in the outside window and leave a note with how to reach you."],
+  ["How do I get alerts on my lock screen?", "In your profile, open App & Alerts and turn alerts on. On an iPhone, add the app to your Home Screen first. Alerts just say “Go to the lounge.”"],
+  ["Why was I signed out?", "You get signed out if you leave the app without an App Lock set, or after 12 hours of not using it. Sign in again, and set an App Lock to make it easier."]
+];
+const tourSheet = $("#tour-sheet"), helpSheet = $("#help-sheet");
+let tourStep = 0;
+const tourKey = "ns-tour-v1-" + user.id;
+function paintTour() {
+  const step = TOUR[tourStep];
+  $("#tour-title").textContent = step.t; $("#tour-text").textContent = step.p;
+  $("#tour-dots").innerHTML = TOUR.map((_, i) => `<i class="${i === tourStep ? "on" : ""}"></i>`).join("");
+  $("#tour-back").hidden = tourStep === 0;
+  $("#tour-next").textContent = tourStep === TOUR.length - 1 ? "Got it" : "Next";
+  const extra = $("#tour-extra"); extra.hidden = !step.extra; extra.textContent = step.extra || "";
+}
+function openTour() { tourStep = 0; helpSheet.hidden = true; paintTour(); tourSheet.hidden = false; }
+function closeTour() { tourSheet.hidden = true; try { localStorage.setItem(tourKey, "1"); } catch { /* storage blocked */ } }
+function closeHelp() { helpSheet.hidden = true; }
+$("#tour-next").addEventListener("click", () => { if (tourStep >= TOUR.length - 1) closeTour(); else { tourStep++; paintTour(); } });
+$("#tour-back").addEventListener("click", () => { if (tourStep > 0) { tourStep--; paintTour(); } });
+$("#tour-close").addEventListener("click", closeTour);
+$("#tour-extra").addEventListener("click", () => { closeTour(); openProfile(); const row = $('[data-pf="pin"]'); if (row) row.click(); });
+$("#help-close").addEventListener("click", closeHelp);
+$("#help-replay").addEventListener("click", openTour);
+$("#help-list").innerHTML = FAQ.map(([q, a]) => `<details class="faq-item"><summary>${safe(q)}</summary><p>${safe(a)}</p></details>`).join("");
+document.addEventListener("click", event => { if (event.target.closest("[data-help]")) { helpSheet.hidden = false; } });
+document.addEventListener("keydown", event => { if (event.key === "Escape") { closeHelp(); if (!tourSheet.hidden) closeTour(); } });
+if (!isOwner) {                                                // a brand-new account gets the tour the first time it signs in on this phone
+  let seen = false; try { seen = Boolean(localStorage.getItem(tourKey)); } catch { /* ignore */ }
+  const fresh = profile.created_at ? Date.now() - Date.parse(profile.created_at) < 14 * 864e5 : new URLSearchParams(location.search).has("tour");
+  if (!seen && fresh) setTimeout(openTour, 900);
+}
 
 /* ---------- first load, then check for news every 15 seconds ---------- */
 await Promise.all([refreshStatus(), loadOrders(), loadMessages(), loadOwnerOrders(), loadOwnerMessages(), loadHelp(), isOwner ? 0 : loadMemos()]);

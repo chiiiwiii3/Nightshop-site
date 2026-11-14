@@ -494,7 +494,7 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 #pf-top{flex-wrap:wrap}#pf-top button{flex:1 1 30%}
 .seg button.out,.seg button:disabled.out{opacity:.4;text-decoration:line-through;cursor:not-allowed}
 /* ? help table + shadow tutorial */
-.nsx .spot-help{position:absolute;z-index:4;left:25.4%;top:83.6%;width:calc(var(--wu,10px) * 3.6);height:calc(var(--wu,10px) * 3.6);margin:calc(var(--wu,10px) * -3.4) 0 0 calc(var(--wu,10px) * -1.8);padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;cursor:pointer;opacity:.85}
+.nsx .spot-help{position:absolute;z-index:4;left:26.4%;top:83.6%;width:calc(var(--wu,10px) * 3.6);height:calc(var(--wu,10px) * 3.6);margin:calc(var(--wu,10px) * -3.4) 0 0 calc(var(--wu,10px) * -1.8);padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;cursor:pointer;opacity:.85}
 .spot-help .help-q{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;border:2px solid rgba(246,199,68,.7);background:radial-gradient(circle at 50% 35%,rgba(29,74,43,.5),rgba(3,17,10,.4) 75%);color:#f6c744;font:700 calc(var(--wu,10px) * 2.3)/1 Georgia,serif;text-shadow:0 0 12px #f6c744;box-shadow:0 0 calc(var(--wu,10px) * 1.4) rgba(246,199,68,.75),inset 0 0 10px #000;pointer-events:none}
 .spot-help:after{content:"";position:absolute;left:-18%;right:-18%;bottom:-9%;height:20%;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.75),rgba(0,0,0,.35) 55%,transparent 72%);z-index:-1;pointer-events:none}
 .tour-sheet{z-index:130}
@@ -508,3 +508,6 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 .faq-item{border:1px solid #e9b93a55;border-radius:12px;background:#0006;padding:0 12px}
 .faq-item summary{cursor:pointer;padding:12px 0;font-weight:600;list-style:none;color:#f6e6b0}.faq-item summary::-webkit-details-marker{display:none}
 .faq-item[open] summary{border-bottom:1px solid #ffffff22}.faq-item p{margin:10px 0 12px;line-height:1.5;color:#dbe6f5}
+@keyframes help-glow{0%,100%{box-shadow:0 0 calc(var(--wu,10px) * .9) rgba(246,199,68,.55),0 0 calc(var(--wu,10px) * 1.8) rgba(246,199,68,.25),inset 0 0 10px #000;border-color:rgba(246,199,68,.7)}50%{box-shadow:0 0 calc(var(--wu,10px) * 1.8) rgba(255,224,120,.95),0 0 calc(var(--wu,10px) * 3.6) rgba(246,199,68,.6),inset 0 0 10px #000;border-color:rgba(255,230,140,1)}}
+.spot-help .help-q{animation:help-glow 2.2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.spot-help .help-q{animation:none}}

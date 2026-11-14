@@ -5,8 +5,10 @@
 // { action: "tick" } (anyone; the app calls it on every status check): closes the shop if a closing time has passed since the
 //   shop was last switched. If the owner opens it by hand AFTER the closing time, it stays open until the next closing time.
 // { action: "get" } / { action: "save", schedule } / { action: "inventory", inventory } : owner only.
-//   Inventory ({ice|tea|shot: "ok"|"low"|"out"}) is stored in the owner's app_metadata.inventory and returned to everyone with every tick.
+//   Inventory ({ice|tea_small|tea_big|shot_small|shot_medium: "ok"|"low"|"out"}) is stored in the owner's app_metadata.inventory and returned to everyone with every tick.
 import { createClient } from "npm:@supabase/supabase-js@2";
+
+const KEYS = ["ice", "tea_small", "tea_big", "shot_small", "shot_medium"];
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -49,7 +51,7 @@ Deno.serve(async (req) => {
   const { data: ownerRow } = await admin.from("profiles").select("id").eq("is_owner", true).limit(1).maybeSingle();
   const { data: ownerUser } = ownerRow ? await admin.auth.admin.getUserById(ownerRow.id) : { data: null };
   const schedule = () => clean(ownerUser?.user?.app_metadata?.shop_schedule);
-  const inventory = () => { const raw = ownerUser?.user?.app_metadata?.inventory || {}, out = {}; for (const id of ["ice", "tea", "shot"]) out[id] = ["low", "out"].includes(raw[id]) ? raw[id] : "ok"; return out; };
+  const inventory = () => { const raw = ownerUser?.user?.app_metadata?.inventory || {}, out = {}; for (const id of KEYS) out[id] = ["low", "out"].includes(raw[id]) ? raw[id] : ["low", "out"].includes(raw[id.split("_")[0]]) ? raw[id.split("_")[0]] : "ok"; return out; };
 
   async function tick() {
     const { data: st } = await admin.from("shop_status").select("is_open,updated_at").eq("id", 1).maybeSingle();
@@ -86,7 +88,7 @@ Deno.serve(async (req) => {
       return respond(200, { success: true, schedule: next, ...state });
     }
     if (body.action === "inventory") {
-      const next = {}; for (const id of ["ice", "tea", "shot"]) next[id] = ["low", "out"].includes(body.inventory?.[id]) ? body.inventory[id] : "ok";
+      const next = {}; for (const id of KEYS) next[id] = ["low", "out"].includes(body.inventory?.[id]) ? body.inventory[id] : "ok";
       const meta = { ...(ownerUser.user.app_metadata || {}), inventory: next };
       const { error } = await admin.auth.admin.updateUserById(ownerRow.id, { app_metadata: meta });
       if (error) return respond(500, { error: "Could not save inventory." });

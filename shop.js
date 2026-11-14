@@ -93,6 +93,14 @@ const ITEMS = [
   { id: "shot", icon: "⚕️", name: "Herbal shots",  detail: "Small or Medium · priced per shot glass",           kind: "shot",   color: "gold",  spot: { l: 25, t: 32.4, w: 6, h: 11 } }
 ];
 const COLORS = { mint: "#8dffe6", green: "#38ff7a", gold: "#ffd36a" };
+/* stock is kept per option: ice, tea_small, tea_big, shot_small, shot_medium (each "ok" | "low" | "out") */
+const STOCK = [
+  { key: "ice", item: "ice", label: "❄️ Honeydrippers" },
+  { key: "tea_small", item: "tea", size: "Small", label: "🌴 Herbal teas · Small" },
+  { key: "tea_big", item: "tea", size: "Big", label: "🌴 Herbal teas · Big" },
+  { key: "shot_small", item: "shot", size: "Small", label: "⚕️ Herbal shots · Small" },
+  { key: "shot_medium", item: "shot", size: "Medium", label: "⚕️ Herbal shots · Medium" }
+];
 
 const ownerOrdersMarkup = isOwner ? `
     ${tabsMarkup("owner-tabs", "Active", "History", "💵 Balances")}
@@ -116,7 +124,7 @@ const ownerControlsMarkup = isOwner ? `
     <p class="muted small" id="invite-note" aria-live="polite"></p>
     <h3>INVENTORY</h3>
     <p class="muted small">Low: the hologram blinks red but people can still order. Out: the hologram disappears and nobody can order it.</p>
-    <div id="inv-rows" class="inv-rows">${ITEMS.map(item => `<div class="inv-row" data-inv="${item.id}"><b>${item.icon} ${item.name}</b><div class="inv-btns"><button type="button" data-level="ok" class="on">In stock</button><button type="button" data-level="low">Low</button><button type="button" data-level="out">Out</button></div></div>`).join("")}</div>
+    <div id="inv-rows" class="inv-rows">${STOCK.map(row => `<div class="inv-row" data-inv="${row.key}"><b>${row.label}</b><div class="inv-btns"><button type="button" data-level="ok" class="on">In stock</button><button type="button" data-level="low">Low</button><button type="button" data-level="out">Out</button></div></div>`).join("")}</div>
     <p id="inv-status" class="small" aria-live="polite"></p>
     <h3>ADD A MEMBER</h3>
     <p class="muted small">Make a one-time invite code (good for 7 days, one person), or make the account yourself for someone who has no phone service.</p>
@@ -413,6 +421,13 @@ window.__spin = { get pan() { return pan; }, set: setPan };   // used by the tes
 /* ---------- shop open (blue lights) / closed (red lights) ---------- */
 let shopOpen = false, statusKnown = false;
 let inventory = {};                                           // { ice|tea|shot: "ok" | "low" | "out" } from the owner
+const stockKey = (itemId, size) => STOCK.find(s => s.item === itemId && (!s.size || s.size === size))?.key;
+const levelOfKey = key => inventory[key] || "ok";
+function itemLevel(itemId) {                                  // the hologram: gone only if every option is out; blinks if any is low or out
+  const levels = STOCK.filter(s => s.item === itemId).map(s => levelOfKey(s.key));
+  if (levels.every(l => l === "out")) return "out";
+  return levels.some(l => l !== "ok") ? "low" : "ok";
+}
 function setInventory(next) {
   if (!next || typeof next !== "object") return;
   inventory = next; applyTheme();
@@ -428,11 +443,12 @@ function applyTheme() {
   if (!tint) { tint = document.createElement("div"); tint.id = "closed-tint"; tint.setAttribute("aria-hidden", "true"); document.body.append(tint); }
   tint.classList.toggle("on", statusKnown && !shopOpen);          // red over the whole screen while the shop is closed
   $$("[data-product]").forEach(button => {
-    const level = inventory[button.dataset.product] || "ok";
+    const level = itemLevel(button.dataset.product);
     button.disabled = !shopOpen || level === "out"; button.hidden = !shopOpen || level === "out";   // out of stock: the hologram disappears
     button.classList.toggle("low", level === "low");                                              // low: it blinks red but can still be ordered
   });
-  if (selected && inventory[selected.id] === "out") closeOrder();
+  if (selected && itemLevel(selected.id) === "out") closeOrder();
+  else if (selected && !$("#order-sheet").hidden) { if (levelOfKey(stockKey(selected.id, opt.size)) === "out") { const alt = STOCK.find(s => s.item === selected.id && levelOfKey(s.key) !== "out"); if (alt?.size) opt.size = alt.size; } renderOptions(); }
   if (!shopOpen) closeOrder();
   const lights = $("#toggle-shop");
   if (lights) lights.textContent = shopOpen ? "💡 LIGHTS BLUE · SHOP OPEN — tap to close" : "💡 LIGHTS RED · SHOP CLOSED — tap to open";
@@ -471,18 +487,21 @@ function computeOrder() {
   if (selected.kind === "tea") return { item: selected.name + " · " + opt.size, quantity: opt.bundle, total: unitPrice() * opt.bundle };
   return { item: selected.name + " · " + opt.size, quantity: opt.qty, total: unitPrice() * opt.qty };
 }
+function sized(itemId, values) {                              // out sizes are crossed off; low sizes say so but can still be ordered
+  return values.map(([value, label]) => { const level = levelOfKey(stockKey(itemId, value)); return [value, label + (level === "out" ? " · OUT" : level === "low" ? " · low" : ""), level === "out"]; });
+}
 function renderOptions() {
-  const seg = (act, values, current) => '<div class="seg">' + values.map(([value, label]) =>
-    `<button type="button" data-act="${act}" data-v="${value}" class="${String(current) === String(value) ? "on" : ""}">${label}</button>`).join("") + "</div>";
+  const seg = (act, values, current) => '<div class="seg">' + values.map(([value, label, off]) =>
+    `<button type="button" data-act="${act}" data-v="${value}" class="${String(current) === String(value) ? "on" : ""}${off ? " out" : ""}"${off ? " disabled" : ""}>${label}</button>`).join("") + "</div>";
   const stepper = (minus, text, plus) => `<div class="stepper"><button type="button" data-act="${minus}" aria-label="Less">−</button><output>${text}</output><button type="button" data-act="${plus}" aria-label="More">+</button></div>`;
   let html = "";
   if (selected.kind === "amount") {
     html = "<label>Spending amount (minimum $20, $5 steps)</label>" + stepper("amt-", money(opt.amount), "amt+");
   } else if (selected.kind === "tea") {
-    html = "<label>Size</label>" + seg("size", [["Small", "Small · $20"], ["Big", "Big · $35"]], opt.size) +
+    html = "<label>Size</label>" + seg("size", sized("tea", [["Small", "Small · $20"], ["Big", "Big · $35"]]), opt.size) +
            "<label>Bundle</label>" + seg("bundle", [[1, "1"], [2, "2"], [4, "4"]], opt.bundle);
   } else {
-    html = "<label>Size</label>" + seg("size", [["Small", "Small · $5 each"], ["Medium", "Medium · $10 each"]], opt.size) +
+    html = "<label>Size</label>" + seg("size", sized("shot", [["Small", "Small · $5 each"], ["Medium", "Medium · $10 each"]]), opt.size) +
            "<label>Number of shots</label>" + stepper("qty-", String(opt.qty), "qty+");
   }
   $("#order-options").innerHTML = html;
@@ -492,6 +511,7 @@ function openOrder(item) {
   if (!shopOpen) return;
   selected = item;
   opt = { amount: 20, size: "Small", bundle: 1, qty: 1 };
+  const firstOk = STOCK.find(s => s.item === item.id && levelOfKey(s.key) !== "out"); if (firstOk?.size) opt.size = firstOk.size;
   const sheet = $("#order-sheet");
   sheet.style.setProperty("--c", COLORS[item.color]);
   $("#order-glyph").textContent = item.icon;
@@ -572,7 +592,7 @@ const rememberHidden = ids => {
 $("#place-order").addEventListener("click", async () => {
   const note = $("#order-note");
   if (!shopOpen || !selected) { note.textContent = "The shop is closed."; return; }
-  if (inventory[selected.id] === "out") { note.textContent = "Sorry, that one just ran out."; return; }
+  if (levelOfKey(stockKey(selected.id, opt.size)) === "out") { note.textContent = "Sorry, that one just ran out."; return; }
   const order = computeOrder();
   if (selected.kind === "amount" && (!Number.isFinite(order.total) || order.total < 20 || order.total > 10000 || order.total % 5 !== 0)) { note.textContent = "Choose $20 or more in $5 steps."; return; }
   if (selected.kind === "shot" && (!Number.isInteger(order.quantity) || order.quantity < 1 || order.quantity > 99)) { note.textContent = "Choose 1–99 shots."; return; }
@@ -1568,7 +1588,7 @@ if (isOwner) {
 
 
   /* inventory: In stock / Low / Out for each hologram, shared with everyone */
-  const drawInventory = () => $$("#inv-rows [data-inv]").forEach(row => row.querySelectorAll("[data-level]").forEach(b => b.classList.toggle("on", b.dataset.level === (inventory[row.dataset.inv] || "ok"))));
+  const drawInventory = () => $$("#inv-rows [data-inv]").forEach(row => row.querySelectorAll("[data-level]").forEach(b => b.classList.toggle("on", b.dataset.level === levelOfKey(row.dataset.inv))));
   drawInventory();
   callClock({ action: "get" }).then(r => { if (r.inventory) { setInventory(r.inventory); drawInventory(); } }).catch(() => {});
   $("#inv-rows").addEventListener("click", async event => {
@@ -1579,8 +1599,8 @@ if (isOwner) {
     try {
       const r = await callClock({ action: "inventory", inventory: next });
       setInventory(r.inventory); drawInventory();
-      const item = ITEMS.find(i => i.id === id), level = r.inventory[id];
-      status.textContent = item.name + ": " + (level === "out" ? "out of stock. The hologram is gone." : level === "low" ? "low. It blinks red but can still be ordered." : "back in stock.");
+      const row = STOCK.find(x => x.key === id), level = r.inventory[id], gone = itemLevel(row.item) === "out";
+      status.textContent = row.label + ": " + (level === "out" ? (gone ? "out of stock. The hologram is gone." : "out of stock. It can't be ordered; the hologram blinks red.") : level === "low" ? "low. It blinks red but can still be ordered." : "back in stock.");
     } catch (e) { setInventory(before); drawInventory(); status.textContent = e.message; }
   });
 

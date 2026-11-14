@@ -492,3 +492,4 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 #memo-form textarea{width:100%;box-sizing:border-box;margin-bottom:8px;resize:vertical}
 .memo-text{white-space:pre-wrap;overflow-wrap:anywhere}.member-row{align-items:center}.member-meta{text-align:right;display:grid;gap:4px;justify-items:end}
 #pf-top{flex-wrap:wrap}#pf-top button{flex:1 1 30%}
+.seg button.out,.seg button:disabled.out{opacity:.4;text-decoration:line-through;cursor:not-allowed}

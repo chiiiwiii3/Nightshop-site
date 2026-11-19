@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     const username = typeof body.username === "string" ? body.username.trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
     if (!/^[A-Za-z0-9_.-]{3,24}$/.test(username)) return respond(400, { error: "Username must be 3–24 letters, numbers, dots, dashes, or underscores." });
-    if (password.length < 12 || password.length > 128) return respond(400, { error: "Password must be 12–128 characters." });
+    if (password.length < 6 || password.length > 128) return respond(400, { error: "Password must be 6–128 characters." });
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email: username.toLowerCase() + "@accounts.thenightshop.invalid", password, email_confirm: true, user_metadata: { display_name: username },
     });

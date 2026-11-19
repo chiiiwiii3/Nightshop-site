@@ -511,3 +511,4 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 @keyframes help-glow{0%,100%{box-shadow:0 0 calc(var(--wu,10px) * .9) rgba(246,199,68,.55),0 0 calc(var(--wu,10px) * 1.8) rgba(246,199,68,.25),inset 0 0 10px #000;border-color:rgba(246,199,68,.7)}50%{box-shadow:0 0 calc(var(--wu,10px) * 1.8) rgba(255,224,120,.95),0 0 calc(var(--wu,10px) * 3.6) rgba(246,199,68,.6),inset 0 0 10px #000;border-color:rgba(255,230,140,1)}}
 .spot-help .help-q{animation:help-glow 2.2s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.spot-help .help-q{animation:none}}
+.order-card .o-name{display:block;margin:0 0 3px;font:700 20px/1.15 Georgia,serif;letter-spacing:.3px;color:#f6e6b0;text-shadow:0 0 10px rgba(246,199,68,.35);overflow-wrap:anywhere}

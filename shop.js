@@ -132,7 +132,7 @@ const ownerControlsMarkup = isOwner ? `
     <div id="mem-code" class="mem-code" hidden></div>
     <p class="muted small" style="margin-top:14px">Or create the account now. Give them the username and temporary password; they can change it in their profile.</p>
     <input id="mem-user" placeholder="Username (3–24 letters or numbers)" maxlength="24" autocomplete="off" autocapitalize="off">
-    <input id="mem-pass" placeholder="Temporary password (12+ characters)" maxlength="128" autocomplete="off">
+    <input id="mem-pass" placeholder="Temporary password (6+ characters)" maxlength="128" autocomplete="off">
     <button type="button" id="mem-create" class="ghost">Create account</button>
     <p id="mem-status" class="small" aria-live="polite"></p>
     <h3>AUTO-CLOSE</h3>
@@ -312,8 +312,8 @@ root.innerHTML = `
             <h3><span class="pf-ico">⚙</span> Settings</h3>
             <button type="button" class="pf-row" data-pf="pw"><span class="pf-ico">🔒</span><span>Change Password</span><i>›</i></button>
             <form class="pf-sub" id="pf-pw" hidden autocomplete="off">
-              <input type="password" name="a" placeholder="New password" minlength="8" maxlength="128" autocomplete="new-password" required>
-              <input type="password" name="b" placeholder="Type it again" minlength="8" maxlength="128" autocomplete="new-password" required>
+              <input type="password" name="a" placeholder="New password (6+ characters)" minlength="6" maxlength="128" autocomplete="new-password" required>
+              <input type="password" name="b" placeholder="Type it again" minlength="6" maxlength="128" autocomplete="new-password" required>
               <button type="submit" class="pf-btn">Save new password</button>
               <p class="pf-note" id="pf-pw-note" aria-live="polite"></p>
             </form>
@@ -1329,7 +1329,7 @@ if (isOwner) {
         ? `<div class="thread-box"><span class="fulfil-tag">CONVERSATION</span><div class="chat">${ownerBubbles(thread, name)}</div>${done ? '<div class="bubble sys">✅ Done</div>' : `<form class="msg-bar small-bar" data-msg="${safe(target.id ?? "")}" data-append="1"><input data-draft="r:${safe(target.id ?? "")}" name="reply" maxlength="500" placeholder="Reply to ${safe(name)}…" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></form>`}</div>`
         : '<small class="pending-note">No conversation yet (older order)</small>';
       const pill = done ? '<span class="status status-done">Done ✅</span>' : `<span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span>`;
-      return `<div class="row-card order-card ${!done && cls(o.status) === "pending" ? "is-new" : ""} ${done ? "is-done" : ""}" data-order-card="${safe(o.id)}"><div><b>${safe(o.item)}</b><small>${safe(name)} · ${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}<div class="decide">${done ? `<button type="button" class="d-wait" data-reopen="${safe(o.id)}">↩ Reopen</button>` : `<button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied" ${cls(o.status) === "denied" ? "disabled" : ""}>Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button><button type="button" class="d-done" data-done="${safe(o.id)}">Done</button>`}</div>${chat}</div>`;
+      return `<div class="row-card order-card ${!done && cls(o.status) === "pending" ? "is-new" : ""} ${done ? "is-done" : ""}" data-order-card="${safe(o.id)}"><div><span class="o-name">${safe(name)}</span><b>${safe(o.item)}</b><small>${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}<div class="decide">${done ? `<button type="button" class="d-wait" data-reopen="${safe(o.id)}">↩ Reopen</button>` : `<button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied" ${cls(o.status) === "denied" ? "disabled" : ""}>Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button><button type="button" class="d-done" data-done="${safe(o.id)}">Done</button>`}</div>${chat}</div>`;
     }).join("") || (ownerTab === "history" ? "No past orders yet." : "No open orders."));
   }
   const orderCard = id => $('#owner-orders [data-order-card="' + id + '"]');

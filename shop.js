@@ -1329,7 +1329,7 @@ if (isOwner) {
         ? `<div class="thread-box"><span class="fulfil-tag">CONVERSATION</span><div class="chat">${ownerBubbles(thread, name)}</div>${done ? '<div class="bubble sys">✅ Done</div>' : `<form class="msg-bar small-bar" data-msg="${safe(target.id ?? "")}" data-append="1"><input data-draft="r:${safe(target.id ?? "")}" name="reply" maxlength="500" placeholder="Reply to ${safe(name)}…" autocomplete="off" required><button type="submit" aria-label="Send reply">➤</button></form>`}</div>`
         : '<small class="pending-note">No conversation yet (older order)</small>';
       const pill = done ? '<span class="status status-done">Done ✅</span>' : `<span class="status status-${cls(o.status)}">${statusLabel(o.status)}</span>`;
-      return `<div class="row-card order-card ${!done && cls(o.status) === "pending" ? "is-new" : ""} ${done ? "is-done" : ""}" data-order-card="${safe(o.id)}"><div><span class="o-name">${safe(name)}</span><b>${safe(o.item)}</b><small>${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}<div class="decide">${done ? `<button type="button" class="d-wait" data-reopen="${safe(o.id)}">↩ Reopen</button>` : `<button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied" ${cls(o.status) === "denied" ? "disabled" : ""}>Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button><button type="button" class="d-done" data-done="${safe(o.id)}">Done</button>`}</div>${chat}</div>`;
+      return `<div class="row-card order-card ${!done && cls(o.status) === "pending" ? "is-new" : ""} ${done ? "is-done" : ""}" data-order-card="${safe(o.id)}"><div><span class="o-name">${safe(name)}</span><b>${safe(o.item)}</b><small>${safe(o.quantity)} · ${money(o.total_amount)} · ${when(o.created_at)}</small></div>${pill}<div class="decide">${done ? `<button type="button" class="d-wait" data-reopen="${safe(o.id)}">↩ Reopen</button>` : `<button type="button" class="d-confirm" data-order="${safe(o.id)}" data-status="confirmed">Confirm</button><button type="button" class="d-deny" data-order="${safe(o.id)}" data-status="denied" ${cls(o.status) === "denied" ? "disabled" : ""}>Deny</button><button type="button" class="d-wait" data-order="${safe(o.id)}" data-status="waitlisted">Waitlist</button><button type="button" class="d-done" data-done="${safe(o.id)}">Done</button>`}</div>${cls(o.status) === "denied" ? "" : `<button type="button" class="bal-add ${ownerCharged.has(o.id) ? "on" : ""}" data-charge="${safe(o.id)}">${ownerCharged.has(o.id) ? "✓ On their balance · tap to remove" : "💵 Add to balance · " + money(o.total_amount)}</button>`}${chat}</div>`;
     }).join("") || (ownerTab === "history" ? "No past orders yet." : "No open orders."));
   }
   const orderCard = id => $('#owner-orders [data-order-card="' + id + '"]');
@@ -1351,10 +1351,13 @@ if (isOwner) {
     $$("#open-profile, .spot-profile").forEach(el => { if (!helpRows.length && !ownerFreshMsgs) el.classList.remove("has-new"); }); refreshOwnerCounts();
   });
 
+  let ownerCharged = new Set();                                 // orders already added to a member's balance
   loadOwnerOrders = async () => {
     const { data, error } = await supabase.from("orders").select("id,customer_id,item,quantity,total_amount,status,created_at").order("created_at", { ascending: false }).limit(100);
     if (error) { $("#owner-orders").textContent = "Could not load orders."; return; }
     ownerOrders = data || [];
+    const charged = await supabase.from("ledger").select("order_id").not("order_id", "is", null);
+    if (!charged.error) ownerCharged = new Set((charged.data || []).map(r => r.order_id));
     const waiting = helpRows.length > 0 || ownerFreshMsgs || ownerOrders.some(o => cls(o.status) === "pending" && !isDone(o, threadFor(o.id, ownerMsgs, o.customer_id)));
     $$("#open-profile, .spot-profile").forEach(el => el.classList.toggle("has-new", waiting));   // a dot on the profile buttons: something needs you
     await learnNames(ownerOrders.map(o => o.customer_id));
@@ -1368,6 +1371,22 @@ if (isOwner) {
     ownerOrdersLoaded = true;
   };
   $("#owner-orders").addEventListener("click", async event => {
+    const chargeButton = event.target.closest("[data-charge]");
+    if (chargeButton) {
+      const id = chargeButton.dataset.charge, o = ownerOrders.find(x => String(x.id) === id); if (!o) return;
+      chargeButton.disabled = true;
+      if (ownerCharged.has(o.id)) {
+        if (!(await ask("Take this order off their balance?", "Remove"))) { chargeButton.disabled = false; return; }
+        const { error } = await supabase.from("ledger").delete().eq("order_id", o.id);
+        if (error) { console.error(error); toast("Could not remove it.", "alert"); chargeButton.disabled = false; return; }
+        toast("Removed from their balance.");
+      } else {
+        const { error } = await supabase.from("ledger").insert({ customer_id: o.customer_id, amount: Number(o.total_amount), note: ("Order: " + o.item + " x" + o.quantity).slice(0, 190), order_id: o.id });
+        if (error) { console.error(error); toast(Number(o.total_amount) > 0 ? "Could not add it. It may already be on their balance." : "That order has no amount to add.", "alert"); chargeButton.disabled = false; await loadOwnerOrders(); return; }
+        toast(money(o.total_amount) + " added to " + (ownerNames.get(o.customer_id) ? ownerNames.get(o.customer_id) + "’s" : "their") + " balance.");
+      }
+      await loadOwnerOrders(); return;
+    }
     const doneButton = event.target.closest("[data-done]");
     if (doneButton) { await markDone(doneButton.dataset.done); return; }
     const reopenButton = event.target.closest("[data-reopen]");

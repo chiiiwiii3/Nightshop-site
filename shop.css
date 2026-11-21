@@ -512,3 +512,6 @@ html:has(#shop-app .nsx),body:has(#shop-app .nsx){overflow:hidden;height:100%;ov
 .spot-help .help-q{animation:help-glow 2.2s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.spot-help .help-q{animation:none}}
 .order-card .o-name{display:block;margin:0 0 3px;font:700 20px/1.15 Georgia,serif;letter-spacing:.3px;color:#f6e6b0;text-shadow:0 0 10px rgba(246,199,68,.35);overflow-wrap:anywhere}
+.order-card .bal-add{display:block;width:100%;margin:10px 0 0;padding:10px;border-radius:10px;border:1px solid #f6c744;background:rgba(246,199,68,.12);color:#f6e6b0;font:700 13px Arial,sans-serif;letter-spacing:.5px}
+.order-card .bal-add.on{border-color:#31d778;background:rgba(49,215,120,.12);color:#7dffb0}
+.order-card .bal-add:disabled{opacity:.5}
